@@ -130,15 +130,23 @@ contract positionContract {
     }
     
     // This functiom calculates the borrow balance of the token (including interest) from compound
-    function calcBorrowBal() public returns (uint256) {
+    function calcBorrowBal() private returns (uint256) {
         borrowBalance = cToken.borrowBalanceCurrent(address(this));
         return borrowBalance;
     }
     
     // This functiom calculates the supplyBalance balance of the collateral (including interest) from compound
-    function calcSupplyBal() public returns (uint256){
+    function calcSupplyBal() private returns (uint256){
         supplyBalance = cCollateral.balanceOf(address(this)) * cCollateral.exchangeRateCurrent() / (10**18);
         return supplyBalance;
+    }
+    
+    function getSupplyBalance() public view returns (uint256) {
+         return cCollateral.balanceOf(address(this)) * cCollateral.exchangeRateStored() / (10**18);
+    }
+    
+    function getBorrowBalance() public view returns (uint256) {
+       return cToken.borrowBalanceStored(address(this));
     }
     
      // This function calculates the amount of collateralToSupply to close the entire position. 
