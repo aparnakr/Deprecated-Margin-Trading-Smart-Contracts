@@ -150,7 +150,7 @@ contract positionContract {
     }
     
      // This function calculates the amount of collateralToSupply to close the entire position. 
-    function calcCollateralToSupply() public returns (uint256) {
+    function calcCollateralToSupply() private returns (uint256) {
         calcBorrowBal();
         if (borrowBalance > 0) {
         uint256 ethToSupply = tokenExchange.getEthToTokenOutputPrice(borrowBalance);
@@ -216,13 +216,34 @@ contract positionContract {
     }
     
      // This function calculates the amount of collateralToSupply to close some part of the position. 
-    function calcCollateralToSupply(uint256 amtToClose) public returns (uint256) {
+    function calcCollateralToSupply(uint256 amtToClose) private returns (uint256) {
         calcBorrowBal();
         if (borrowBalance > 0 && amtToClose <= borrowBalance) {
         uint256 ethToSupply = tokenExchange.getEthToTokenOutputPrice(amtToClose);
         collateralToSupply = collateralExchange.getTokenToEthOutputPrice(ethToSupply);
         }
         return collateralToSupply;
+        
+    }
+    
+    function getCollateralToSupply(uint256 amtToClose) public view returns (uint256){
+        uint256 bBal = getBorrowBalance();
+        uint256 colToSupply = 0;
+        if (bBal > 0 && amtToClose <= bBal) {
+            uint256 ethToSupply = tokenExchange.getEthToTokenOutputPrice(amtToClose);
+            colToSupply = collateralExchange.getTokenToEthOutputPrice(ethToSupply);
+        }
+        return colToSupply;
+    }
+    
+    function getCollateralToSupplyEntire() public view returns (uint256) {
+        uint256 bBal = getBorrowBalance();
+        uint256 colToSupply = 0;
+        if (bBal > 0) {
+        uint256 ethToSupply = tokenExchange.getEthToTokenOutputPrice(bBal);
+        colToSupply = collateralExchange.getTokenToEthOutputPrice(ethToSupply);
+        }
+        return colToSupply;
         
     }
     
