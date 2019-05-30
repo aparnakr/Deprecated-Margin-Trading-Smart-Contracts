@@ -47,9 +47,9 @@ contract Factory{
     }
     
     function openShortETH() public {
-        if(ZRX[msg.sender] == address(0x0)) {
+        if(ETH[msg.sender] == address(0x0)) {
             positionContract s = new positionContract(msg.sender, "ZRX", tokenAddresses[0], ctokenAddresses[0], tokenExchangeAddresses[0], tokenAddresses[2],  ctokenAddresses[2], tokenExchangeAddresses[2], "s");
-            ZRX[msg.sender] = address(s);
+            ETH[msg.sender] = address(s);
         }
     }
     
