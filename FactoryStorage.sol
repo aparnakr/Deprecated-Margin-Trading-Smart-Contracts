@@ -89,7 +89,6 @@ contract FactoryStorage {
 //    }
 
     function addNewTokenToPositionContracts (tokenAddr, cTokenAddr, exchangeAddr, positionKey) {
-    // if it doesn't exist, addTokenAddr, addcTokenAddr, addExchangeAddr, addPositionName
     }
 
     function addNewPositionContract(positionIndex, userAddress, contractAddress){

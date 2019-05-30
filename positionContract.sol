@@ -271,6 +271,4 @@ contract positionContract {
         transferInCollateral(collateralAmt);
         mintCollateral(collateralAmt);
     }
-    
-    
 }
