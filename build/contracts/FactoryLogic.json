@@ -1,0 +1,711 @@
+{
+  "contractName": "FactoryLogic",
+  "abi": [
+    {
+      "constant": true,
+      "inputs": [],
+      "name": "factoryStorageContract",
+      "outputs": [
+        {
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [],
+      "name": "owner",
+      "outputs": [
+        {
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "name": "factoryStorageContractAddress",
+          "type": "address"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    }
+  ],
+  "metadata": "{\"compiler\":{\"version\":\"0.5.8+commit.23d335f2\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"constant\":true,\"inputs\":[],\"name\":\"factoryStorageContract\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"owner\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"name\":\"factoryStorageContractAddress\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"}],\"devdoc\":{\"methods\":{}},\"userdoc\":{\"methods\":{}}},\"settings\":{\"compilationTarget\":{\"/Users/zubinkoticha/WebstormProjects/Truffled/contracts/FactoryLogic.sol\":\"FactoryLogic\"},\"evmVersion\":\"petersburg\",\"libraries\":{},\"optimizer\":{\"enabled\":false,\"runs\":200},\"remappings\":[]},\"sources\":{\"/Users/zubinkoticha/WebstormProjects/Truffled/contracts/FactoryLogic.sol\":{\"keccak256\":\"0xb0dc00217149941e85a42eef5a78dd685701e7a5e35423ac9bf7e2e9e212d16e\",\"urls\":[\"bzzr://2a4097ca41102f85a0be8edf4af5924b3864771a5652c55d4649e2b6f91a692b\"]},\"/Users/zubinkoticha/WebstormProjects/Truffled/contracts/FactoryStorage.sol\":{\"keccak256\":\"0x404bbab14e540cfab2d949815fa7a1d249301c31489a5dbb52a939a22a654015\",\"urls\":[\"bzzr://9c6f3edb95f4a6b5f3797f2f126776bde00e79052e51261b4128368c9decc72c\"]}},\"version\":1}",
+  "bytecode": "0x608060405234801561001057600080fd5b506040516020806102188339810180604052602081101561003057600080fd5b8101908080519060200190929190505050336000806101000a81548173ffffffffffffffffffffffffffffffffffffffff021916908373ffffffffffffffffffffffffffffffffffffffff16021790555080600160006101000a81548173ffffffffffffffffffffffffffffffffffffffff021916908373ffffffffffffffffffffffffffffffffffffffff16021790555050610146806100d26000396000f3fe608060405234801561001057600080fd5b50600436106100365760003560e01c80638d7620191461003b5780638da5cb5b14610085575b600080fd5b6100436100cf565b604051808273ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200191505060405180910390f35b61008d6100f5565b604051808273ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200191505060405180910390f35b600160009054906101000a900473ffffffffffffffffffffffffffffffffffffffff1681565b6000809054906101000a900473ffffffffffffffffffffffffffffffffffffffff168156fea165627a7a723058206ffe466ebae596cab5b48dd1e1f6919c94856b7af89d0b509d46267c20f392e40029",
+  "deployedBytecode": "0x608060405234801561001057600080fd5b50600436106100365760003560e01c80638d7620191461003b5780638da5cb5b14610085575b600080fd5b6100436100cf565b604051808273ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200191505060405180910390f35b61008d6100f5565b604051808273ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200191505060405180910390f35b600160009054906101000a900473ffffffffffffffffffffffffffffffffffffffff1681565b6000809054906101000a900473ffffffffffffffffffffffffffffffffffffffff168156fea165627a7a723058206ffe466ebae596cab5b48dd1e1f6919c94856b7af89d0b509d46267c20f392e40029",
+  "sourceMap": "349:2680:0:-;;;815:173;8:9:-1;5:2;;;30:1;27;20:12;5:2;815:173:0;;;;;;;;;;;;;13:2:-1;8:3;5:11;2:2;;;29:1;26;19:12;2:2;815:173:0;;;;;;;;;;;;;;;;891:10;883:5;;:18;;;;;;;;;;;;;;;;;;951:29;911:22;;:70;;;;;;;;;;;;;;;;;;815:173;349:2680;;;;;;",
+  "deployedSourceMap": "349:2680:0:-;;;;8:9:-1;5:2;;;30:1;27;20:12;5:2;349:2680:0;;;;;;;;;;;;;;;;;;;;;;;;708:44;;;:::i;:::-;;;;;;;;;;;;;;;;;;;;;;;681:20;;;:::i;:::-;;;;;;;;;;;;;;;;;;;;;;;708:44;;;;;;;;;;;;;:::o;681:20::-;;;;;;;;;;;;;:::o",
+  "source": "pragma solidity ^0.5.8;\n//import {positionContract} from \"./positionContract.sol\";\n//import {CErc20, ComptrollerInterface, CToken} from \"./CERC20.sol\";\n//import {CEther} from \"./CEther.sol\";\n//import {UniswapExchangeInterface} from \"./uniswap.sol\";\n//import {ERC20Interface} from \"./ERC20.sol\";\nimport {FactoryStorage} from \"./FactoryStorage.sol\";\n\ncontract FactoryLogic {\n//    mapping (uint => address) public tokenAddresses;\n//    mapping (uint => address) public ctokenAddresses;\n//    mapping (uint => address) public tokenExchangeAddresses;\n//\n//     userAddr => shortRepAddr\n//    mapping (address => address) public REP;\n//    mapping (address => address) public ZRX;\n\n    address public owner;\n\n    FactoryStorage public factoryStorageContract;\n\n    //TODO: change the constructor for future versions.\n    constructor(address factoryStorageContractAddress) public {\n        owner = msg.sender;\n        factoryStorageContract = FactoryStorage(factoryStorageContractAddress);\n    }\n    \n//    function openShortERC20(string token) public {\n//        //TODO: should be require right not if statement so there's no wasted gas!\n//        //(get the propper mapping!)\n//        mapping (address => address) REP;\n//        REP = factoryStorageContract.REP;\n//        if(REP[msg.sender] == address(0x0)) {\n//            positionContract s = new positionContract(\n//                msg.sender,\n//                \"REP\",\n//                factoryStorageContract.tokenAddresses(0),\n//                factoryStorageContract.ctokenAddresses(0),\n//                factoryStorageContract.tokenExchangeAddresses[0],\n//                factoryStorageContract.tokenAddresses[3],\n//                factoryStorageContract.ctokenAddresses[3],\n//                factoryStorageContract.tokenExchangeAddresses[3],\n//                \"s\"\n//            );\n//            REP[msg.sender] = address(s);\n//        }\n//    }\n//\n//    function openShortETH() public {\n//        if(ETH[msg.sender] == address(0x0)) {\n//            positionContract s = new positionContract(msg.sender, \"ZRX\", tokenAddresses[0], ctokenAddresses[0], tokenExchangeAddresses[0], tokenAddresses[2],  ctokenAddresses[2], tokenExchangeAddresses[2], \"s\");\n//            ETH[msg.sender] = address(s);\n//        }\n//    }\n//\n//    function openLongERC20(string token) public {\n//        if(REP[msg.sender] == address(0x0)) {\n//            positionContract s = new positionContract(msg.sender, \"REP\", tokenAddresses[3], ctokenAddresses[3], tokenExchangeAddresses[3], tokenAddresses[0],  ctokenAddresses[0], tokenExchangeAddresses[0], \"l\");\n//            REP[msg.sender] = address(s);\n//        }\n//    }\n//\n//    function openLongETH(string token) public {\n//        if(ZRX[msg.sender] == address(0x0)) {\n//            positionContract s = new positionContract(msg.sender, \"ZRX\", tokenAddresses[2], ctokenAddresses[2], tokenExchangeAddresses[2], tokenAddresses[0],  ctokenAddresses[0], tokenExchangeAddresses[0], \"l\");\n//            ZRX[msg.sender] = address(s);\n//        }\n//    }\n}",
+  "sourcePath": "/Users/zubinkoticha/WebstormProjects/Truffled/contracts/FactoryLogic.sol",
+  "ast": {
+    "absolutePath": "/Users/zubinkoticha/WebstormProjects/Truffled/contracts/FactoryLogic.sol",
+    "exportedSymbols": {
+      "FactoryLogic": [
+        25
+      ]
+    },
+    "id": 26,
+    "nodeType": "SourceUnit",
+    "nodes": [
+      {
+        "id": 1,
+        "literals": [
+          "solidity",
+          "^",
+          "0.5",
+          ".8"
+        ],
+        "nodeType": "PragmaDirective",
+        "src": "0:23:0"
+      },
+      {
+        "absolutePath": "/Users/zubinkoticha/WebstormProjects/Truffled/contracts/FactoryStorage.sol",
+        "file": "./FactoryStorage.sol",
+        "id": 3,
+        "nodeType": "ImportDirective",
+        "scope": 26,
+        "sourceUnit": 98,
+        "src": "295:52:0",
+        "symbolAliases": [
+          {
+            "foreign": 2,
+            "local": null
+          }
+        ],
+        "unitAlias": ""
+      },
+      {
+        "baseContracts": [],
+        "contractDependencies": [],
+        "contractKind": "contract",
+        "documentation": null,
+        "fullyImplemented": true,
+        "id": 25,
+        "linearizedBaseContracts": [
+          25
+        ],
+        "name": "FactoryLogic",
+        "nodeType": "ContractDefinition",
+        "nodes": [
+          {
+            "constant": false,
+            "id": 5,
+            "name": "owner",
+            "nodeType": "VariableDeclaration",
+            "scope": 25,
+            "src": "681:20:0",
+            "stateVariable": true,
+            "storageLocation": "default",
+            "typeDescriptions": {
+              "typeIdentifier": "t_address",
+              "typeString": "address"
+            },
+            "typeName": {
+              "id": 4,
+              "name": "address",
+              "nodeType": "ElementaryTypeName",
+              "src": "681:7:0",
+              "stateMutability": "nonpayable",
+              "typeDescriptions": {
+                "typeIdentifier": "t_address",
+                "typeString": "address"
+              }
+            },
+            "value": null,
+            "visibility": "public"
+          },
+          {
+            "constant": false,
+            "id": 7,
+            "name": "factoryStorageContract",
+            "nodeType": "VariableDeclaration",
+            "scope": 25,
+            "src": "708:44:0",
+            "stateVariable": true,
+            "storageLocation": "default",
+            "typeDescriptions": {
+              "typeIdentifier": "t_contract$_FactoryStorage_$97",
+              "typeString": "contract FactoryStorage"
+            },
+            "typeName": {
+              "contractScope": null,
+              "id": 6,
+              "name": "FactoryStorage",
+              "nodeType": "UserDefinedTypeName",
+              "referencedDeclaration": 97,
+              "src": "708:14:0",
+              "typeDescriptions": {
+                "typeIdentifier": "t_contract$_FactoryStorage_$97",
+                "typeString": "contract FactoryStorage"
+              }
+            },
+            "value": null,
+            "visibility": "public"
+          },
+          {
+            "body": {
+              "id": 23,
+              "nodeType": "Block",
+              "src": "873:115:0",
+              "statements": [
+                {
+                  "expression": {
+                    "argumentTypes": null,
+                    "id": 15,
+                    "isConstant": false,
+                    "isLValue": false,
+                    "isPure": false,
+                    "lValueRequested": false,
+                    "leftHandSide": {
+                      "argumentTypes": null,
+                      "id": 12,
+                      "name": "owner",
+                      "nodeType": "Identifier",
+                      "overloadedDeclarations": [],
+                      "referencedDeclaration": 5,
+                      "src": "883:5:0",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_address",
+                        "typeString": "address"
+                      }
+                    },
+                    "nodeType": "Assignment",
+                    "operator": "=",
+                    "rightHandSide": {
+                      "argumentTypes": null,
+                      "expression": {
+                        "argumentTypes": null,
+                        "id": 13,
+                        "name": "msg",
+                        "nodeType": "Identifier",
+                        "overloadedDeclarations": [],
+                        "referencedDeclaration": 169,
+                        "src": "891:3:0",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_magic_message",
+                          "typeString": "msg"
+                        }
+                      },
+                      "id": 14,
+                      "isConstant": false,
+                      "isLValue": false,
+                      "isPure": false,
+                      "lValueRequested": false,
+                      "memberName": "sender",
+                      "nodeType": "MemberAccess",
+                      "referencedDeclaration": null,
+                      "src": "891:10:0",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_address_payable",
+                        "typeString": "address payable"
+                      }
+                    },
+                    "src": "883:18:0",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "id": 16,
+                  "nodeType": "ExpressionStatement",
+                  "src": "883:18:0"
+                },
+                {
+                  "expression": {
+                    "argumentTypes": null,
+                    "id": 21,
+                    "isConstant": false,
+                    "isLValue": false,
+                    "isPure": false,
+                    "lValueRequested": false,
+                    "leftHandSide": {
+                      "argumentTypes": null,
+                      "id": 17,
+                      "name": "factoryStorageContract",
+                      "nodeType": "Identifier",
+                      "overloadedDeclarations": [],
+                      "referencedDeclaration": 7,
+                      "src": "911:22:0",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_contract$_FactoryStorage_$97",
+                        "typeString": "contract FactoryStorage"
+                      }
+                    },
+                    "nodeType": "Assignment",
+                    "operator": "=",
+                    "rightHandSide": {
+                      "argumentTypes": null,
+                      "arguments": [
+                        {
+                          "argumentTypes": null,
+                          "id": 19,
+                          "name": "factoryStorageContractAddress",
+                          "nodeType": "Identifier",
+                          "overloadedDeclarations": [],
+                          "referencedDeclaration": 9,
+                          "src": "951:29:0",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_address",
+                            "typeString": "address"
+                          }
+                        }
+                      ],
+                      "expression": {
+                        "argumentTypes": [
+                          {
+                            "typeIdentifier": "t_address",
+                            "typeString": "address"
+                          }
+                        ],
+                        "id": 18,
+                        "name": "FactoryStorage",
+                        "nodeType": "Identifier",
+                        "overloadedDeclarations": [],
+                        "referencedDeclaration": 97,
+                        "src": "936:14:0",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_type$_t_contract$_FactoryStorage_$97_$",
+                          "typeString": "type(contract FactoryStorage)"
+                        }
+                      },
+                      "id": 20,
+                      "isConstant": false,
+                      "isLValue": false,
+                      "isPure": false,
+                      "kind": "typeConversion",
+                      "lValueRequested": false,
+                      "names": [],
+                      "nodeType": "FunctionCall",
+                      "src": "936:45:0",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_contract$_FactoryStorage_$97",
+                        "typeString": "contract FactoryStorage"
+                      }
+                    },
+                    "src": "911:70:0",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_contract$_FactoryStorage_$97",
+                      "typeString": "contract FactoryStorage"
+                    }
+                  },
+                  "id": 22,
+                  "nodeType": "ExpressionStatement",
+                  "src": "911:70:0"
+                }
+              ]
+            },
+            "documentation": null,
+            "id": 24,
+            "implemented": true,
+            "kind": "constructor",
+            "modifiers": [],
+            "name": "",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 10,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 9,
+                  "name": "factoryStorageContractAddress",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 24,
+                  "src": "827:37:0",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 8,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "827:7:0",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "826:39:0"
+            },
+            "returnParameters": {
+              "id": 11,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "873:0:0"
+            },
+            "scope": 25,
+            "src": "815:173:0",
+            "stateMutability": "nonpayable",
+            "superFunction": null,
+            "visibility": "public"
+          }
+        ],
+        "scope": 26,
+        "src": "349:2680:0"
+      }
+    ],
+    "src": "0:3029:0"
+  },
+  "legacyAST": {
+    "absolutePath": "/Users/zubinkoticha/WebstormProjects/Truffled/contracts/FactoryLogic.sol",
+    "exportedSymbols": {
+      "FactoryLogic": [
+        25
+      ]
+    },
+    "id": 26,
+    "nodeType": "SourceUnit",
+    "nodes": [
+      {
+        "id": 1,
+        "literals": [
+          "solidity",
+          "^",
+          "0.5",
+          ".8"
+        ],
+        "nodeType": "PragmaDirective",
+        "src": "0:23:0"
+      },
+      {
+        "absolutePath": "/Users/zubinkoticha/WebstormProjects/Truffled/contracts/FactoryStorage.sol",
+        "file": "./FactoryStorage.sol",
+        "id": 3,
+        "nodeType": "ImportDirective",
+        "scope": 26,
+        "sourceUnit": 98,
+        "src": "295:52:0",
+        "symbolAliases": [
+          {
+            "foreign": 2,
+            "local": null
+          }
+        ],
+        "unitAlias": ""
+      },
+      {
+        "baseContracts": [],
+        "contractDependencies": [],
+        "contractKind": "contract",
+        "documentation": null,
+        "fullyImplemented": true,
+        "id": 25,
+        "linearizedBaseContracts": [
+          25
+        ],
+        "name": "FactoryLogic",
+        "nodeType": "ContractDefinition",
+        "nodes": [
+          {
+            "constant": false,
+            "id": 5,
+            "name": "owner",
+            "nodeType": "VariableDeclaration",
+            "scope": 25,
+            "src": "681:20:0",
+            "stateVariable": true,
+            "storageLocation": "default",
+            "typeDescriptions": {
+              "typeIdentifier": "t_address",
+              "typeString": "address"
+            },
+            "typeName": {
+              "id": 4,
+              "name": "address",
+              "nodeType": "ElementaryTypeName",
+              "src": "681:7:0",
+              "stateMutability": "nonpayable",
+              "typeDescriptions": {
+                "typeIdentifier": "t_address",
+                "typeString": "address"
+              }
+            },
+            "value": null,
+            "visibility": "public"
+          },
+          {
+            "constant": false,
+            "id": 7,
+            "name": "factoryStorageContract",
+            "nodeType": "VariableDeclaration",
+            "scope": 25,
+            "src": "708:44:0",
+            "stateVariable": true,
+            "storageLocation": "default",
+            "typeDescriptions": {
+              "typeIdentifier": "t_contract$_FactoryStorage_$97",
+              "typeString": "contract FactoryStorage"
+            },
+            "typeName": {
+              "contractScope": null,
+              "id": 6,
+              "name": "FactoryStorage",
+              "nodeType": "UserDefinedTypeName",
+              "referencedDeclaration": 97,
+              "src": "708:14:0",
+              "typeDescriptions": {
+                "typeIdentifier": "t_contract$_FactoryStorage_$97",
+                "typeString": "contract FactoryStorage"
+              }
+            },
+            "value": null,
+            "visibility": "public"
+          },
+          {
+            "body": {
+              "id": 23,
+              "nodeType": "Block",
+              "src": "873:115:0",
+              "statements": [
+                {
+                  "expression": {
+                    "argumentTypes": null,
+                    "id": 15,
+                    "isConstant": false,
+                    "isLValue": false,
+                    "isPure": false,
+                    "lValueRequested": false,
+                    "leftHandSide": {
+                      "argumentTypes": null,
+                      "id": 12,
+                      "name": "owner",
+                      "nodeType": "Identifier",
+                      "overloadedDeclarations": [],
+                      "referencedDeclaration": 5,
+                      "src": "883:5:0",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_address",
+                        "typeString": "address"
+                      }
+                    },
+                    "nodeType": "Assignment",
+                    "operator": "=",
+                    "rightHandSide": {
+                      "argumentTypes": null,
+                      "expression": {
+                        "argumentTypes": null,
+                        "id": 13,
+                        "name": "msg",
+                        "nodeType": "Identifier",
+                        "overloadedDeclarations": [],
+                        "referencedDeclaration": 169,
+                        "src": "891:3:0",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_magic_message",
+                          "typeString": "msg"
+                        }
+                      },
+                      "id": 14,
+                      "isConstant": false,
+                      "isLValue": false,
+                      "isPure": false,
+                      "lValueRequested": false,
+                      "memberName": "sender",
+                      "nodeType": "MemberAccess",
+                      "referencedDeclaration": null,
+                      "src": "891:10:0",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_address_payable",
+                        "typeString": "address payable"
+                      }
+                    },
+                    "src": "883:18:0",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "id": 16,
+                  "nodeType": "ExpressionStatement",
+                  "src": "883:18:0"
+                },
+                {
+                  "expression": {
+                    "argumentTypes": null,
+                    "id": 21,
+                    "isConstant": false,
+                    "isLValue": false,
+                    "isPure": false,
+                    "lValueRequested": false,
+                    "leftHandSide": {
+                      "argumentTypes": null,
+                      "id": 17,
+                      "name": "factoryStorageContract",
+                      "nodeType": "Identifier",
+                      "overloadedDeclarations": [],
+                      "referencedDeclaration": 7,
+                      "src": "911:22:0",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_contract$_FactoryStorage_$97",
+                        "typeString": "contract FactoryStorage"
+                      }
+                    },
+                    "nodeType": "Assignment",
+                    "operator": "=",
+                    "rightHandSide": {
+                      "argumentTypes": null,
+                      "arguments": [
+                        {
+                          "argumentTypes": null,
+                          "id": 19,
+                          "name": "factoryStorageContractAddress",
+                          "nodeType": "Identifier",
+                          "overloadedDeclarations": [],
+                          "referencedDeclaration": 9,
+                          "src": "951:29:0",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_address",
+                            "typeString": "address"
+                          }
+                        }
+                      ],
+                      "expression": {
+                        "argumentTypes": [
+                          {
+                            "typeIdentifier": "t_address",
+                            "typeString": "address"
+                          }
+                        ],
+                        "id": 18,
+                        "name": "FactoryStorage",
+                        "nodeType": "Identifier",
+                        "overloadedDeclarations": [],
+                        "referencedDeclaration": 97,
+                        "src": "936:14:0",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_type$_t_contract$_FactoryStorage_$97_$",
+                          "typeString": "type(contract FactoryStorage)"
+                        }
+                      },
+                      "id": 20,
+                      "isConstant": false,
+                      "isLValue": false,
+                      "isPure": false,
+                      "kind": "typeConversion",
+                      "lValueRequested": false,
+                      "names": [],
+                      "nodeType": "FunctionCall",
+                      "src": "936:45:0",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_contract$_FactoryStorage_$97",
+                        "typeString": "contract FactoryStorage"
+                      }
+                    },
+                    "src": "911:70:0",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_contract$_FactoryStorage_$97",
+                      "typeString": "contract FactoryStorage"
+                    }
+                  },
+                  "id": 22,
+                  "nodeType": "ExpressionStatement",
+                  "src": "911:70:0"
+                }
+              ]
+            },
+            "documentation": null,
+            "id": 24,
+            "implemented": true,
+            "kind": "constructor",
+            "modifiers": [],
+            "name": "",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 10,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 9,
+                  "name": "factoryStorageContractAddress",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 24,
+                  "src": "827:37:0",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 8,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "827:7:0",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "826:39:0"
+            },
+            "returnParameters": {
+              "id": 11,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "873:0:0"
+            },
+            "scope": 25,
+            "src": "815:173:0",
+            "stateMutability": "nonpayable",
+            "superFunction": null,
+            "visibility": "public"
+          }
+        ],
+        "scope": 26,
+        "src": "349:2680:0"
+      }
+    ],
+    "src": "0:3029:0"
+  },
+  "compiler": {
+    "name": "solc",
+    "version": "0.5.8+commit.23d335f2.Emscripten.clang"
+  },
+  "networks": {
+    "1559281184381": {
+      "events": {},
+      "links": {},
+      "address": "0x226f79998C80280ba0a7fe12Bd50FB9C228a179B",
+      "transactionHash": "0x81d94cca5ed120ab47258c909aa0c1f985e1c1e6877576bc7d025a04a7321e62"
+    },
+    "1559282007732": {
+      "events": {},
+      "links": {},
+      "address": "0xBdAc72EE580B105E55890407C66104fE650CE468",
+      "transactionHash": "0x0c9588804bb1a3c092d1360159a3a06a38cc1b4b6b46ccdded5d085c6cf62fc7"
+    }
+  },
+  "schemaVersion": "3.0.10",
+  "updatedAt": "2019-05-31T05:59:52.737Z",
+  "devdoc": {
+    "methods": {}
+  },
+  "userdoc": {
+    "methods": {}
+  }
+}

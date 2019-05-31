@@ -1,4 +1,4 @@
-//pragma solidity ^0.5.2;
+pragma solidity ^0.5.8;
 //import {positionContract} from "./positionContract.sol";
 //import {CErc20, ComptrollerInterface, CToken} from "./CERC20.sol";
 //import {CEther} from "./CEther.sol";
@@ -15,9 +15,9 @@ contract FactoryLogic {
 //    mapping (address => address) public REP;
 //    mapping (address => address) public ZRX;
 
-    address owner;
+    address public owner;
 
-    FactoryStorage factoryStorageContract;
+    FactoryStorage public factoryStorageContract;
 
     //TODO: change the constructor for future versions.
     constructor(address factoryStorageContractAddress) public {
