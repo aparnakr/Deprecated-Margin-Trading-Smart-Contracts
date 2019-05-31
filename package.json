@@ -1,6 +1,6 @@
 {
-  "name": "loanstandard",
-  "version": "1.0.0",
+  "name": "Opyn",
+  "version": "0.0.1",
   "description": "",
   "main": "truffle.js",
   "directories": {
@@ -17,17 +17,20 @@
     "expect": "^21.2.1",
     "expect.js": "^0.3.1",
     "firebase": "^4.1.2",
+    "ganache-cli": "^6.4.3",
     "json-stable-stringify": "^1.0.1",
     "lodash": "^4.17.4",
     "orbit-db": "^0.17.3",
     "random-js": "^1.0.8",
     "scrypt": "^6.0.3",
     "semver": "^5.3.0",
-    "solc": "^0.4.11",
+    "solc": "^0.4.8",
     "solc-cli": "^0.3.0",
+    "truffle": "^5.0.19",
     "truffle-config": "^1.0.0",
+    "truffle-contract": "^4.0.18",
     "uuid": "^3.0.1",
-    "web3": "^0.19.1",
+    "web3": "^0.20.7",
     "web3-provider-engine": "^12.2.3",
     "zeppelin-solidity": "^1.0.6"
   },
@@ -42,17 +45,17 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/dharmaprotocol/LoanStandard.git"
+    "url": "git+https://github.com/opynfinance/Solidity-Contracts.git"
   },
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/dharmaprotocol/LoanStandard/issues"
+    "url": "https://github.com/opynfinance/Solidity-Contracts/issues"
   },
   "babel": {
     "presets": [
       "es2015"
     ]
   },
-  "homepage": "https://github.com/dharmaprotocol/LoanStandard#readme"
+  "homepage": "https://github.com/opynfinance/Solidity-Contracts#readme"
 }
