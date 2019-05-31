@@ -621,8 +621,8 @@ interface EIP20Interface {
     function transfer(address dst, uint256 amount) external returns (bool success);
 
     /**
-      * @notice Transfer `amount` tokens from `contracts` to `dst`
-      * @param contracts The address of the source account
+      * @notice Transfer `amount` tokens from `src` to `dst`
+      * @param src The address of the source account
       * @param dst The address of the destination account
       * @param amount The number of tokens to transfer
       * @return Whether or not the transfer succeeded
@@ -630,7 +630,7 @@ interface EIP20Interface {
     function transferFrom(address src, address dst, uint256 amount) external returns (bool success);
 
     /**
-      * @notice Approve `spender` to transfer up to `amount` from `contracts`
+      * @notice Approve `spender` to transfer up to `amount` from `src`
       * @dev This will overwrite the approval amount for `spender`
       *  and is subject to issues noted [here](https://eips.ethereum.org/EIPS/eip-20#approve)
       * @param spender The address of the account which may transfer tokens
@@ -696,15 +696,15 @@ interface EIP20NonStandardInterface {
     ///
 
     /**
-      * @notice Transfer `amount` tokens from `contracts` to `dst`
-      * @param contracts The address of the source account
+      * @notice Transfer `amount` tokens from `src` to `dst`
+      * @param src The address of the source account
       * @param dst The address of the destination account
       * @param amount The number of tokens to transfer
       */
     function transferFrom(address src, address dst, uint256 amount) external;
 
     /**
-      * @notice Approve `spender` to transfer up to `amount` from `contracts`
+      * @notice Approve `spender` to transfer up to `amount` from `src`
       * @dev This will overwrite the approval amount for `spender`
       *  and is subject to issues noted [here](https://eips.ethereum.org/EIPS/eip-20#approve)
       * @param spender The address of the account which may transfer tokens
@@ -996,11 +996,11 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
      * @param decimals_ EIP-20 decimal precision of this token
      */
     constructor(ComptrollerInterface comptroller_,
-                InterestRateModel interestRateModel_,
-                uint initialExchangeRateMantissa_,
-                string memory name_,
-                string memory symbol_,
-                uint decimals_) internal {
+        InterestRateModel interestRateModel_,
+        uint initialExchangeRateMantissa_,
+        string memory name_,
+        string memory symbol_,
+        uint decimals_) internal {
         // Set admin to msg.sender
         admin = msg.sender;
 
@@ -1026,10 +1026,10 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
     }
 
     /**
-     * @notice Transfer `amount` tokens from `contracts` to `dst` by `spender`
+     * @notice Transfer `amount` tokens from `src` to `dst` by `spender`
      * @dev Called by both `transfer` and `transferFrom` internally
      * @param spender The address of the account performing the transfer
-     * @param contracts The address of the source account
+     * @param src The address of the source account
      * @param dst The address of the destination account
      * @param amount The number of tokens to transfer
      * @return Whether or not the transfer succeeded
@@ -1102,8 +1102,8 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
     }
 
     /**
-     * @notice Transfer `amount` tokens from `contracts` to `dst`
-     * @param contracts The address of the source account
+     * @notice Transfer `amount` tokens from `src` to `dst`
+     * @param src The address of the source account
      * @param dst The address of the destination account
      * @param amount The number of tokens to transfer
      * @return Whether or not the transfer succeeded
@@ -1113,7 +1113,7 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
     }
 
     /**
-     * @notice Approve `spender` to transfer up to `amount` from `contracts`
+     * @notice Approve `spender` to transfer up to `amount` from `src`
      * @dev This will overwrite the approval amount for `spender`
      *  and is subject to issues noted [here](https://eips.ethereum.org/EIPS/eip-20#approve)
      * @param spender The address of the account which may transfer tokens
@@ -2379,12 +2379,12 @@ contract CErc20 is CToken {
      * @param decimals_ ERC-20 decimal precision of this token
      */
     constructor(address underlying_,
-                ComptrollerInterface comptroller_,
-                InterestRateModel interestRateModel_,
-                uint initialExchangeRateMantissa_,
-                string memory name_,
-                string memory symbol_,
-                uint decimals_) public
+        ComptrollerInterface comptroller_,
+        InterestRateModel interestRateModel_,
+        uint initialExchangeRateMantissa_,
+        string memory name_,
+        string memory symbol_,
+        uint decimals_) public
     CToken(comptroller_, interestRateModel_, initialExchangeRateMantissa_, name_, symbol_, decimals_) {
         // Set underlying
         underlying = underlying_;
@@ -2511,16 +2511,16 @@ contract CErc20 is CToken {
         // solium-disable-next-line security/no-inline-assembly
         assembly {
             switch returndatasize()
-                case 0 {                      // This is a non-standard ERC-20
-                    result := not(0)          // set result to true
-                }
-                case 32 {                     // This is a complaint ERC-20
-                    returndatacopy(0, 0, 32)
-                    result := mload(0)        // Set `result = returndata` of external call
-                }
-                default {                     // This is an excessively non-compliant ERC-20, revert.
-                    revert(0, 0)
-                }
+            case 0 {                      // This is a non-standard ERC-20
+                result := not(0)          // set result to true
+            }
+            case 32 {                     // This is a complaint ERC-20
+                returndatacopy(0, 0, 32)
+                result := mload(0)        // Set `result = returndata` of external call
+            }
+            default {                     // This is an excessively non-compliant ERC-20, revert.
+                revert(0, 0)
+            }
         }
 
         if (!result) {
@@ -2548,16 +2548,16 @@ contract CErc20 is CToken {
         // solium-disable-next-line security/no-inline-assembly
         assembly {
             switch returndatasize()
-                case 0 {                      // This is a non-standard ERC-20
-                    result := not(0)          // set result to true
-                }
-                case 32 {                     // This is a complaint ERC-20
-                    returndatacopy(0, 0, 32)
-                    result := mload(0)        // Set `result = returndata` of external call
-                }
-                default {                     // This is an excessively non-compliant ERC-20, revert.
-                    revert(0, 0)
-                }
+            case 0 {                      // This is a non-standard ERC-20
+                result := not(0)          // set result to true
+            }
+            case 32 {                     // This is a complaint ERC-20
+                returndatacopy(0, 0, 32)
+                result := mload(0)        // Set `result = returndata` of external call
+            }
+            default {                     // This is an excessively non-compliant ERC-20, revert.
+                revert(0, 0)
+            }
         }
 
         if (!result) {

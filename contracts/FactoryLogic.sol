@@ -1,5 +1,5 @@
 pragma solidity ^0.5.8;
-//import {positionContract} from "./positionContract.sol";
+import {PositionContract} from "./PositionContract.sol";
 //import {CErc20, ComptrollerInterface, CToken} from "./CERC20.sol";
 //import {CEther} from "./CEther.sol";
 //import {UniswapExchangeInterface} from "./uniswap.sol";
@@ -10,10 +10,6 @@ contract FactoryLogic {
 //    mapping (uint => address) public tokenAddresses;
 //    mapping (uint => address) public ctokenAddresses;
 //    mapping (uint => address) public tokenExchangeAddresses;
-//
-//     userAddr => shortRepAddr
-//    mapping (address => address) public REP;
-//    mapping (address => address) public ZRX;
 
     address public owner;
 
@@ -25,8 +21,28 @@ contract FactoryLogic {
         factoryStorageContract = FactoryStorage(factoryStorageContractAddress);
     }
     
+    function openShortREP() public {
+        //TODO: should be require not if statement so there's no wasted gas!
+        //(get the proper mapping!)
+        address positionContract = factoryStorageContract.REP(msg.sender);
+        if (positionContract == address(0x0)) {
+            PositionContract s = new PositionContract(
+                msg.sender,
+                "REP",
+                factoryStorageContract.tokenAddresses(0),
+                factoryStorageContract.ctokenAddresses(0),
+                factoryStorageContract.tokenExchangeAddresses[0],
+                factoryStorageContract.tokenAddresses[3],
+                factoryStorageContract.ctokenAddresses[3],
+                factoryStorageContract.tokenExchangeAddresses[3],
+                "s"
+            );
+            factoryStorageContract.addNewREPPosContAddress(address(s));
+        }
+    }
+
 //    function openShortERC20(string token) public {
-//        //TODO: should be require right not if statement so there's no wasted gas!
+//        //TODO: should be require not if statement so there's no wasted gas!
 //        //(get the propper mapping!)
 //        mapping (address => address) REP;
 //        REP = factoryStorageContract.REP;

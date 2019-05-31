@@ -74,6 +74,10 @@ class Util {
             err.toString().indexOf('invalid opcode') > -1).to.be(true);
     }
 
+    assertFailedRequire(err) {
+        expect(err.toString().indexOf('revert') > -1).to.be(true);
+    }
+
     static stripZeroEx(data) {
         if (data.slice(0,2) === '0x')
             return data.slice(2)

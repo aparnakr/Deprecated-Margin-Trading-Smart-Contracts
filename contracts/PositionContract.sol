@@ -4,8 +4,7 @@ import {CEther} from "./CEther.sol";
 import {UniswapExchangeInterface} from "./uniswap.sol";
 import {ERC20Interface} from "./ERC20.sol";
 
-
-contract positionContract {
+contract PositionContract {
     // The user's address
     address public ownerAddress; 
     string public tradeType; 
@@ -90,7 +89,6 @@ contract positionContract {
         
         token.approve(address(tokenExchange), 1000000000000000000000000000000000000000);
         tokenExchange.tokenToTokenTransferInput(amt, 1, 1, 16517531290, ownerAddress, address(collateral));
-        
     }
     
     // This function opens a new short position of token against collateral
@@ -102,7 +100,6 @@ contract positionContract {
         borrowToken(assetAmt);
         swapTokenToCollateral(assetAmt);
         amtShorted = amtShorted + assetAmt;
-    
     }
     
     // This function checks if the trade type made matches the trade type of the contract. If it doesn't, it tries to swap it. 

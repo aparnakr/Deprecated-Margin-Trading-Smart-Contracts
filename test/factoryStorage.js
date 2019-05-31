@@ -25,6 +25,7 @@ contract('FactoryStorage', (accounts) => {
         expect(web3.toChecksumAddress(owner1)).to.be(web3.toChecksumAddress(accounts[1]));
         expect(web3.toChecksumAddress(owner2)).to.be(web3.toChecksumAddress(accounts[2]));
     })
+
     //
     // it('others shouldn't be able to mess things up', async () => {
     //     var owner1 = await factoryStorageInstance.setFactoryLogicAddress();
@@ -36,7 +37,6 @@ contract('FactoryStorage', (accounts) => {
 
 contract('FactoryLogic', (accounts) => {
     beforeEach(async () => {
-        //TODO: fix this, we don't want to deploy every time!
         factoryLogicInstance = await FactoryLogic.deployed();
     });
 
@@ -52,9 +52,9 @@ contract('FactoryLogic', (accounts) => {
 });
 
 
+
 contract('FactoryStorage2', (accounts) => {
     beforeEach(async () => {
-        //TODO: fix this, we don't want to deploy every time!
         factoryLogicInstance = await FactoryLogic.deployed();
         factoryStorageInstance = await FactoryStorage.deployed()
     });
@@ -66,5 +66,67 @@ contract('FactoryStorage2', (accounts) => {
         expect(factoryLogicAddress).to.be(factoryLogicInstance.address);
     });
 
+    it('should work if owner1 or owner2 try to setFactoryLogicAddress', async () => {
+        await factoryStorageInstance.setFactoryLogicAddress(factoryLogicInstance.address, { from: accounts[1] });
+        var factoryLogicAddress = await factoryStorageInstance.factoryLogicAddress();
+        expect(factoryLogicAddress).to.be(factoryLogicInstance.address);
+
+        await factoryStorageInstance.setFactoryLogicAddress(factoryLogicInstance.address, { from: accounts[2] });
+        var factoryLogicAddress1 = await factoryStorageInstance.factoryLogicAddress();
+        expect(factoryLogicAddress1).to.be(factoryLogicInstance.address);
+    });
+
+    it('should throw if non owner tries to setFactoryLogicAddress', async () => {
+        try {
+            await factoryStorageInstance.setFactoryLogicAddress(factoryLogicInstance.address, { from: accounts[3] });
+            //TODO: what is the value of the next line?
+            expect().fail("should throw error");
+        } catch (err) {
+            // console.log(err)
+            util.assertFailedRequire(err);
+        }
+    });
+
+    it('adding User should work from accounts[0]', async () => {
+        //TODO: write a function ensuring no one else can call this!
+        await factoryStorageInstance.addUser(accounts[1]);
+        var userAddress0 = await factoryStorageInstance.userAddresses(0);
+        expect(userAddress0).to.be(accounts[1]);
+    });
+
+    it('should work if owner1 or owner2 try to addUser', async () => {
+        await factoryStorageInstance.addUser(accounts[3], { from: accounts[1] });
+        var userAddress1 = await factoryStorageInstance.userAddresses(1);
+        expect(userAddress1).to.be(accounts[3]);
+
+        await factoryStorageInstance.addUser(accounts[4], { from: accounts[2] });
+        var userAddress2 = await factoryStorageInstance.userAddresses(2);
+        expect(userAddress2).to.be(accounts[4]);
+    });
+
+    it('should throw if non owner tries to addUser', async () => {
+        try {
+            await factoryStorageInstance.addUser(accounts[0], { from: accounts[3] });
+            expect().fail("should throw error");
+        } catch (err) {
+            // console.log(err)
+            util.assertFailedRequire(err);
+        }
+    });
 });
+
+contract('FactoryLogic2', (accounts) => {
+    beforeEach(async () => {
+        factoryLogicInstance = await FactoryLogic.deployed();
+        factoryStorageInstance = await FactoryStorage.deployed()
+    });
+
+    // it('openshortrep should work', async () => {
+    //     await factoryLogicInstance.openShortREP();
+    //     //TODO: add event listening here.
+    //     var repContract = factoryStorageInstance.REP[0];
+    //     console.log(repContract);
+    // });
+});
+
 

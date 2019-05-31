@@ -621,7 +621,7 @@ interface EIP20Interface {
 
     /**
       * @notice Transfer `amount` tokens from `contracts` to `dst`
-      * @param contracts The address of the source account
+      * @param src The address of the source account
       * @param dst The address of the destination account
       * @param amount The number of tokens to transfer
       * @return Whether or not the transfer succeeded
@@ -696,7 +696,7 @@ interface EIP20NonStandardInterface {
 
     /**
       * @notice Transfer `amount` tokens from `contracts` to `dst`
-      * @param contracts The address of the source account
+      * @param src The address of the source account
       * @param dst The address of the destination account
       * @param amount The number of tokens to transfer
       */
@@ -1028,7 +1028,7 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
      * @notice Transfer `amount` tokens from `contracts` to `dst` by `spender`
      * @dev Called by both `transfer` and `transferFrom` internally
      * @param spender The address of the account performing the transfer
-     * @param contracts The address of the source account
+     * @param src The address of the source account
      * @param dst The address of the destination account
      * @param amount The number of tokens to transfer
      * @return Whether or not the transfer succeeded
@@ -1102,7 +1102,7 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
 
     /**
      * @notice Transfer `amount` tokens from `contracts` to `dst`
-     * @param contracts The address of the source account
+     * @param src The address of the source account
      * @param dst The address of the destination account
      * @param amount The number of tokens to transfer
      * @return Whether or not the transfer succeeded

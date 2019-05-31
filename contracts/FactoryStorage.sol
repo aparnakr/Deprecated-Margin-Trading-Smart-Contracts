@@ -2,6 +2,10 @@ pragma solidity ^0.5.8;
 
 contract FactoryStorage {
 
+    //     userAddr => shortRepAddr
+        mapping (address => address) public REP;
+    //    mapping (address => address) public ZRX;
+
 ////    struct Trade? {
 ////        address exchangeContract?;
 ////        address xyz;
@@ -45,11 +49,19 @@ contract FactoryStorage {
 ////    // All the Set and Add functions can only be called by the factory logic? contract
 ////    function updateUserAddress(i, val){}
 //
-//    function addUser(address newAddress) public {
-//        require(factoryLogicAddress == msg.sender);
-//        //TODO: ensure push actually works
-//        userAddresses.push(newAddress);
-//    }
+    function addUser(address newAddress) public {
+//        TODO: this is correct: require(factoryLogicAddress == msg.sender);
+        require(ownerAddresses[0] == msg.sender || ownerAddresses[1] == msg.sender || ownerAddresses[2] == msg.sender);
+
+        userAddresses.push(newAddress);
+    }
+
+    function addNewREPPosContAddress(address caller, address newPositionContractAddress) public {
+        require(factoryLogicAddress == msg.sender);
+        REP[caller] = newPositionContractAddress;
+    }
+
+
 //
 //    function addTokenAddress(address newAddress) public {
 //        require(factoryLogicAddress == msg.sender);
