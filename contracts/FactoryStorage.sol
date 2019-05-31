@@ -10,28 +10,20 @@ contract FactoryStorage {
 ////TODO: add events
 ////uint256 public constant DECIMALS = 18;
 //
-//    address public factoryLogicAddress;
+    address public factoryLogicAddress;
 //
 //    //TODO: is the following how you declare arrays properly?
     address[3] public ownerAddresses;
-    address public owner;
-//
-//    address[] public userAddresses;
+    address[] public userAddresses;
 //    address[] public tokenAddresses;
 //    //TODO: figure out camelcase for the following
 //    address[] public ctokenAddresses;
 //    address[] public exchangeAddresses;
 
-//    constructor(address owner1, address owner2) public {
-    constructor() public {
+    constructor(address owner1, address owner2) public {
         ownerAddresses[0] = msg.sender;
-//        ownerAddresses[1] = owner1;
-//        ownerAddresses[2] = owner2;
-        owner = msg.sender;
-    }
-
-    function getOwner() public view returns(uint256) {
-        return uint256(3);
+        ownerAddresses[1] = owner1;
+        ownerAddresses[2] = owner2;
     }
 //
 //    //TODO: write explainer on the following mapping
@@ -41,11 +33,11 @@ contract FactoryStorage {
 //    mapping (address => address) public REP;
 //    mapping (address => address) public ZRX;
 //
-//    function setFactoryLogicAddress(address newAddress) public {
-//        require(ownerAddresses[0] == msg.sender || ownerAddresses[1] == msg.sender || ownerAddresses[2] == msg.sender);
-//        //TODO: better security practices required than the above
-//        factoryLogicAddress = newAddress;
-//    }
+    function setFactoryLogicAddress(address newAddress) public {
+        require(ownerAddresses[0] == msg.sender || ownerAddresses[1] == msg.sender || ownerAddresses[2] == msg.sender);
+        //TODO: better security practices required than the above
+        factoryLogicAddress = newAddress;
+    }
 //
 ////    // returns "REP1, "REP2 ..."
 ////    function getPositionNames () {}

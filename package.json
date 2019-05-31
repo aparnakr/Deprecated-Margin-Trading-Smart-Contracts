@@ -12,7 +12,6 @@
     "bigdecimal": "^0.6.1",
     "bip39": "^2.3.1",
     "ethereum-units": "^0.0.1-b",
-    "ethereumjs-testrpc": "^3.0.5",
     "ethereumjs-wallet": "^0.6.0",
     "expect": "^21.2.1",
     "expect.js": "^0.3.1",
