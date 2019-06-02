@@ -22,28 +22,28 @@ contract FactoryLogic {
                 PositionContract s = new PositionContract(
                     msg.sender,
                     ticker,
-                    factoryStorageContract.tokenAddresses(0),
-                    factoryStorageContract.ctokenAddresses(0),
-                    factoryStorageContract.exchangeAddresses(0),
-                    factoryStorageContract.tokenAddresses(3),
-                    factoryStorageContract.ctokenAddresses(3),
-                    factoryStorageContract.exchangeAddresses(3),
+                    factoryStorageContract.tokenAddresses('DAI'),
+                    factoryStorageContract.ctokenAddresses('DAI'),
+                    factoryStorageContract.exchangeAddresses('DAI'),
+                    factoryStorageContract.tokenAddresses(ticker),
+                    factoryStorageContract.ctokenAddresses(ticker),
+                    factoryStorageContract.exchangeAddresses(ticker),
                     'l'
                 );
-                factoryStorageContract.addNewPositionContract(ticker, msg.sender,address(s));
+                factoryStorageContract.addNewPositionContract(ticker, msg.sender, address(s));
             } else {
                 PositionContract s = new PositionContract(
                     msg.sender,
                     ticker,
-                    factoryStorageContract.tokenAddresses(0),
-                    factoryStorageContract.ctokenAddresses(0),
-                    factoryStorageContract.exchangeAddresses(0),
-                    factoryStorageContract.tokenAddresses(3),
-                    factoryStorageContract.ctokenAddresses(3),
-                    factoryStorageContract.exchangeAddresses(3),
+                    factoryStorageContract.tokenAddresses('DAI'),
+                    factoryStorageContract.ctokenAddresses('DAI'),
+                    factoryStorageContract.exchangeAddresses('DAI'),
+                    factoryStorageContract.tokenAddresses(ticker),
+                    factoryStorageContract.ctokenAddresses(ticker),
+                    factoryStorageContract.exchangeAddresses(ticker),
                     's'
                 );
-                factoryStorageContract.addNewPositionContract(ticker, msg.sender,address(s));
+                factoryStorageContract.addNewPositionContract(ticker, msg.sender, address(s));
             }
         }
     }
