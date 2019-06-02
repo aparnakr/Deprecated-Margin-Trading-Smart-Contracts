@@ -85,7 +85,7 @@ contract FactoryStorage {
 //
 //    function addcTokenAddress(address newAddress) public {
 //        require(factoryLogicAddress == msg.sender);
-//        ctokenAddresses['DAI') = newAddress);
+//        ctokenAddresses['DAI'] = newAddress);
 //    }
 //
 //    function updatecTokenAddress(uint256 index, address newAddress) public {
@@ -95,7 +95,7 @@ contract FactoryStorage {
 //
 //    function addExchangeAddress(address newAddress) public {
 //        require(factoryLogicAddress == msg.sender);
-//        exchangeAddresses['DAI') = newAddress);
+//        exchangeAddresses['DAI'] = newAddress);
 //    }
 //
 //    function updateExchangeAddress(uint256 index, address newAddress) public {
@@ -108,9 +108,15 @@ contract FactoryStorage {
 ////        exchangeAddresses[index] = newAddress;
 ////    }
 
-//    function addNewTokenToPositionContracts (string memory ticker, address tokenAddr, address cTokenAddr, address exchangeAddr, bytes32 positionKey) public {
-//
-//    }
+
+//  TODO: proper solidity style for following function
+    function addNewTokenToPositionContracts (string memory ticker, address tokenAddr, address cTokenAddr, address exchangeAddr) public {
+        require(factoryLogicAddress == msg.sender|| ownerAddresses[0] == msg.sender || ownerAddresses[1] == msg.sender || ownerAddresses[2] == msg.sender);
+        //TODO: do we want to first ensure ticker not already there?!
+        tokenAddresses[ticker] = tokenAddr;
+        ctokenAddresses[ticker] = cTokenAddr;
+        exchangeAddresses[ticker] = exchangeAddr;
+    }
 
     function addNewPositionContract(string memory ticker, address userAddress, address newContractAddress) public {
         //TODO: ensure userAddress has been added and ticker is valid.
