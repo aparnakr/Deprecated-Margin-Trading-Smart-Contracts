@@ -41,11 +41,6 @@ contract('FactoryLogic', (accounts) => {
         factoryLogicInstance = await FactoryLogic.deployed();
     });
 
-    it('owner should be msg.sender', async () => {
-        var sender = await factoryLogicInstance.owner();
-        expect(web3.toChecksumAddress(sender)).to.be(web3.toChecksumAddress(accounts[0]));
-    });
-
     it('var factoryStorageContract should be correct contract', async () => {
         var contract = await factoryLogicInstance.factoryStorageContract();
         expect(contract).to.be(factoryStorageInstance.address);

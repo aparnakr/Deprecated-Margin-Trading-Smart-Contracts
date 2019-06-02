@@ -22,6 +22,7 @@ contract FactoryLogic {
                 PositionContract s = new PositionContract(
                     msg.sender,
                     ticker,
+                    //TODO: ensure the following are correct
                     factoryStorageContract.tokenAddresses('DAI'),
                     factoryStorageContract.ctokenAddresses('DAI'),
                     factoryStorageContract.exchangeAddresses('DAI'),
@@ -30,11 +31,13 @@ contract FactoryLogic {
                     factoryStorageContract.exchangeAddresses(ticker),
                     'l'
                 );
+                //TODO: add user if they aren't in FactoryStorage
                 factoryStorageContract.addNewPositionContract(ticker, msg.sender, address(s));
             } else {
                 PositionContract s = new PositionContract(
                     msg.sender,
                     ticker,
+                    //TODO: ensure the following are correct
                     factoryStorageContract.tokenAddresses('DAI'),
                     factoryStorageContract.ctokenAddresses('DAI'),
                     factoryStorageContract.exchangeAddresses('DAI'),
@@ -43,16 +46,16 @@ contract FactoryLogic {
                     factoryStorageContract.exchangeAddresses(ticker),
                     's'
                 );
-                factoryStorageContract.addNewPositionContract(ticker, msg.sender, address(s));
+                //TODO: add user if they aren't in FactoryStorage
+            factoryStorageContract.addNewPositionContract(ticker, msg.sender, address(s));
             }
         }
     }
 
-//    function openShortETH() public {
+//    function openETHContract(bool isLeverage) public {
 //        if(ETH[msg.sender] == address(0x0)) {
-//            positionContract s = new positionContract(msg.sender, "ZRX", tokenAddresses[0], ctokenAddresses[0], tokenExchangeAddresses[0], tokenAddresses[2],  ctokenAddresses[2], tokenExchangeAddresses[2], "s");
+//            positionContract s = new positionContract(msg.sender, "ETH", tokenAddresses[0], ctokenAddresses[0], tokenExchangeAddresses[0], tokenAddresses[2],  ctokenAddresses[2], tokenExchangeAddresses[2], "s");
 //            ETH[msg.sender] = address(s);
 //        }
 //    }
-//
 }
