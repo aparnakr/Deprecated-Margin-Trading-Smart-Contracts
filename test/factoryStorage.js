@@ -1,6 +1,7 @@
 const assert = require('assert')
 import {web3, util} from './init.js';
 import expect from 'expect.js';
+import {NewRep} from './utils/FactoryEvents.js'
 
 const FactoryStorage = artifacts.require('./FactoryStorage.sol')
 const FactoryLogic = artifacts.require('./FactoryLogic.sol')
@@ -50,7 +51,6 @@ contract('FactoryLogic', (accounts) => {
         expect(contract).to.be(factoryStorageInstance.address);
     });
 });
-
 
 
 contract('FactoryStorage2', (accounts) => {
@@ -113,19 +113,51 @@ contract('FactoryStorage2', (accounts) => {
             util.assertFailedRequire(err);
         }
     });
+
+    it('opencontract functions short should work', async () => {
+        const result = await factoryLogicInstance.openERC20Contract('REP', true);
+        // console.log(factoryLogicInstance.address)
+        // console.log(accounts[0])
+        // console.log(await factoryStorageInstance.positionContracts('REP',accounts[0]))
+
+
+        // const result1 = await factoryLogicInstance.openContractZRX();
+        // console.log(factoryLogicInstance.address)
+        // console.log(accounts[0])
+        // console.log(await factoryStorageInstance.ZRX(accounts[0]))
+        // // console.log(factoryLogicInstance.address)
+        // var event = await factoryStorageInstance.NewPositionContract({sender});
+
+
+        // console.log(event)
+        // console.log(result)
+        // var event = await factoryStorageInstance.NewRep({sender, caller, newPositionContractAddress, factoryLogicAddress});
+
+        // watch for changes
+        // event.watch(function(error, result){
+        //     if (!error) {
+        //         console.log(result);
+        //     } else {
+        //         console.error(error);
+        //     }});
+
+        //TODO: add event listening.
+        // var repContract = await factoryStorageInstance.REP(0);
+        // console.log(repContract);
+
+        // util.assertEventEquality(event.logs[0], NewRep({
+        //     sender: factoryLogicInstance,
+        //     caller: accounts[0],
+        //     newPositionContractAddress: '0x0',
+        //     factoryLogicAddress: factoryLogicInstance,
+        // }))
+    });
 });
 
 contract('FactoryLogic2', (accounts) => {
-    beforeEach(async () => {
-        factoryLogicInstance = await FactoryLogic.deployed();
-        factoryStorageInstance = await FactoryStorage.deployed()
-    });
-
-    // it('openshortrep should work', async () => {
-    //     await factoryLogicInstance.openShortREP();
-    //     //TODO: add event listening here.
-    //     var repContract = factoryStorageInstance.REP[0];
-    //     console.log(repContract);
+    // beforeEach(async () => {
+    //     factoryLogicInstance = await FactoryLogic.deployed();
+    //     factoryStorageInstance = await FactoryStorage.deployed()
     // });
 });
 
