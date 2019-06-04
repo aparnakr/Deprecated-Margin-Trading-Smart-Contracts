@@ -5,6 +5,9 @@ import {NewRep} from './utils/FactoryEvents.js'
 
 const FactoryStorage = artifacts.require('./FactoryStorage.sol')
 const FactoryLogic = artifacts.require('./FactoryLogic.sol')
+const PositionContract = require('../build/contracts/PositionContract.json')
+const PositionContractABI = PositionContract.abi;
+
 
 let factoryStorageInstance;
 let factoryLogicInstance;
@@ -109,12 +112,14 @@ contract('FactoryStorage2', (accounts) => {
         }
     });
 
-    it('opencontract functions short should work', async () => {
+    it('openERC20Contract function should work', async () => {
         const result = await factoryLogicInstance.openERC20Contract('REP', true);
         // console.log(factoryLogicInstance.address)
         // console.log(accounts[0])
-        // console.log(await factoryStorageInstance.positionContracts('REP',accounts[0]))
-
+        var pcAddress = await factoryStorageInstance.positionContracts('REP', accounts[0]);
+        const positionContractInstance = web3.eth.contract(PositionContractABI).at(pcAddress, (err,res)=>{return res;})
+        expect(positionContractInstance.ownerAddress()).to.be(accounts[0].toLowerCase())
+        expect(positionContractInstance.positionSize().toString()).to.be('0')
 
         // const result1 = await factoryLogicInstance.openContractZRX();
         // console.log(factoryLogicInstance.address)
@@ -148,13 +153,4 @@ contract('FactoryStorage2', (accounts) => {
         // }))
     });
 });
-
-contract('FactoryLogic2', (accounts) => {
-    // beforeEach(async () => {
-    //     factoryLogicInstance = await FactoryLogic.deployed();
-    //     factoryStorageInstance = await FactoryStorage.deployed()
-    // });
-});
-
-
 

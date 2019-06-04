@@ -5,7 +5,6 @@ import {UniswapExchangeInterface} from "./uniswap.sol";
 import {ERC20Interface} from "./ERC20.sol";
 import {Comptroller} from "./Comptroller.sol";
 
-
 contract PositionContract {
 
     // The user's address
@@ -22,7 +21,6 @@ contract PositionContract {
     CErc20 cCollateral;
 
     uint256 public positionSize;
-
 
     uint256 private tokenBalance;
     uint256 private borrowBalance;
@@ -87,7 +85,6 @@ contract PositionContract {
         uint error = cToken.borrow(amt);
         assert(error == 0);
     }
-
 
 
     // This function exchanges the token borrowed from compound for more collateral tokens on uniswap
@@ -182,7 +179,6 @@ contract PositionContract {
     function getSupplyBalance() public view returns (uint256) {
         return cCollateral.balanceOf(address(this));
     }
-
 
 
     // This function sends the remaining collateral back to the user

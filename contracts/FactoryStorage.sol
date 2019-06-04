@@ -1,5 +1,10 @@
 pragma solidity ^0.5.8;
 
+/**
+ * @title Opyns's FactoryStorage Contract
+ * @notice Stores contract, user, exchange, and token data. Deploys FactoryLogic.
+ * @author Opyn, Aparna Krishnan and Zubin Koticha
+ */
 contract FactoryStorage {
 
     event NewPositionContract(
@@ -17,20 +22,22 @@ contract FactoryStorage {
 
     //maybe the name positionContractAddresses is better?!
     //ticker => userAddr => shortRepAddr
-        //e.g. ticker = 'REP'
+    //e.g. ticker = 'REP'
     mapping (string => mapping (address => address)) public positionContracts;
 
+    /**
+    * @notice the following give the ERC20 token address, ctoken, and Uniswap Exchange for a given token ticker symbol.
+    * e.g tokenAddresses('REP') => 0x1a...
+    * e.g ctokenAddresses('REP') => 0x51...
+    * e.g exchangeAddresses('REP') => 0x9a...
+    */
     mapping (string => address) public tokenAddresses;
     mapping (string => address) public ctokenAddresses;
     mapping (string => address) public exchangeAddresses;
 
-    //    struct Trade? {
-//        address exchangeContract?;
-//        address xyz;
-//    }
-//TODO: think about - using SafeMath for uint;
-//TODO: add events
-//uint256 public constant DECIMALS = 18;
+    //TODO: think about - using SafeMath for uint;
+    //TODO: add events
+    //uint256 public constant DECIMALS = 18;
 
     address public factoryLogicAddress;
 
@@ -38,7 +45,11 @@ contract FactoryStorage {
     address[] public userAddresses;
     //TODO: figure out camelcase for the following
 
-
+    /**
+    * @notice Constructs a new FactoryStorage
+    * @param owner1 The second owner (after msg.sender)
+    * @param owner2 The third owner (after msg.sender)
+    */
     constructor(address owner1, address owner2) public {
         ownerAddresses[0] = msg.sender;
         ownerAddresses[1] = owner1;
@@ -62,30 +73,55 @@ contract FactoryStorage {
         exchangeAddresses['REP'] = 0x67B67cb021a956D1956884B99cE2FB7dc835a080;
     }
 
+    /**
+    * @notice Sets a FactoryLogic contract that this contract interacts with, this clause is responsibility for upgradeability.
+    * @param newAddress the address of the new FactoryLogic contract
+    */
     function setFactoryLogicAddress(address newAddress) public {
         require(ownerAddresses[0] == msg.sender || ownerAddresses[1] == msg.sender || ownerAddresses[2] == msg.sender);
         //TODO: better security practices required than the above
         factoryLogicAddress = newAddress;
     }
 
-//    // returns "REP1, "REP2 ..."
-//    function getPositionNames () {}
-//
-//    // All the Set and Add functions can only be called by the factory logic? contract
-//    function updateUserAddress(i, val){}
-
+    /**
+    * @notice Adds a new user to the userAddresses array.
+    * @param newAddress the address of the new user
+    */
     function addUser(address newAddress) public {
         require(factoryLogicAddress == msg.sender|| ownerAddresses[0] == msg.sender || ownerAddresses[1] == msg.sender || ownerAddresses[2] == msg.sender);
         //TODO: THE ABOVE ALSO LEAVES US VULNERABLE: THE WHOLE SYSTEM GOES DOWN IF EVEN ONE KEY IS TAKEN
         userAddresses.push(newAddress);
-//        UserAdded(userAddr);
+        //UserAdded(userAddr);
     }
 
     //TODO: is the following required?
+    /**
+    * @notice Sets a FactoryLogic contract that this contract interacts with, this clause is responsibility for upgradeability.
+    * @param newAddress the address of the new FactoryLogic contract
+    */
     function addTokenAddress(string memory ticker, address newAddress) public {
         require(factoryLogicAddress == msg.sender);
         tokenAddresses[ticker] = newAddress;
     }
+
+    //  TODO: proper solidity style for following function
+    function addNewTokenToPositionContracts(string memory ticker, address tokenAddr, address cTokenAddr, address exchangeAddr) public {
+        require(factoryLogicAddress == msg.sender|| ownerAddresses[0] == msg.sender || ownerAddresses[1] == msg.sender || ownerAddresses[2] == msg.sender);
+        //TODO: do we want to first ensure ticker not already there?!
+        tokenAddresses[ticker] = tokenAddr;
+        ctokenAddresses[ticker] = cTokenAddr;
+        exchangeAddresses[ticker] = exchangeAddr;
+        emit NewTokenAddedToPositionContract(ticker, tokenAddr, cTokenAddr, exchangeAddr);
+    }
+
+    function addNewPositionContract(string memory ticker, address userAddress, address newContractAddress) public {
+        //TODO: ensure userAddress has been added and ticker is valid.
+        require(factoryLogicAddress == msg.sender);
+        positionContracts[ticker][userAddress] = newContractAddress;
+        //TODO: shouldn't the following event include the ticker?
+        emit NewPositionContract(userAddress, newContractAddress, msg.sender);
+    }
+
 
     //TODO: aren't all the following functions not required if addNewTokenToPositionContracts works?!
 //    function updateTokenAddress(uint256 index, address newAddress) public {
@@ -118,22 +154,5 @@ contract FactoryStorage {
 ////        exchangeAddresses[index] = newAddress;
 ////    }
 
-
-//  TODO: proper solidity style for following function
-    function addNewTokenToPositionContracts(string memory ticker, address tokenAddr, address cTokenAddr, address exchangeAddr) public {
-        require(factoryLogicAddress == msg.sender|| ownerAddresses[0] == msg.sender || ownerAddresses[1] == msg.sender || ownerAddresses[2] == msg.sender);
-        //TODO: do we want to first ensure ticker not already there?!
-        tokenAddresses[ticker] = tokenAddr;
-        ctokenAddresses[ticker] = cTokenAddr;
-        exchangeAddresses[ticker] = exchangeAddr;
-        emit NewTokenAddedToPositionContract(ticker, tokenAddr, cTokenAddr, exchangeAddr);
-    }
-
-    function addNewPositionContract(string memory ticker, address userAddress, address newContractAddress) public {
-        //TODO: ensure userAddress has been added and ticker is valid.
-        require(factoryLogicAddress == msg.sender);
-        positionContracts[ticker][userAddress] = newContractAddress;
-        //TODO: shouldn't the following event include the ticker?
-        emit NewPositionContract(userAddress, newContractAddress, msg.sender);
-    }
+    //    function getPositionNames () {}
 }
