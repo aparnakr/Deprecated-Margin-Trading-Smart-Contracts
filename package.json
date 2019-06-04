@@ -2,7 +2,7 @@
   "name": "Opyn",
   "version": "0.0.1",
   "description": "",
-  "main": "truffle.js",
+  "main": "truffle-config.js",
   "directories": {
     "lib": "lib",
     "test": "test"

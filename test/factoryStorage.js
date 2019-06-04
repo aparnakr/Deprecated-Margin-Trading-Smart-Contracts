@@ -29,14 +29,6 @@ contract('FactoryStorage', (accounts) => {
         expect(web3.toChecksumAddress(owner1)).to.be(web3.toChecksumAddress(accounts[1]));
         expect(web3.toChecksumAddress(owner2)).to.be(web3.toChecksumAddress(accounts[2]));
     })
-
-    //
-    // it('others shouldn't be able to mess things up', async () => {
-    //     var owner1 = await factoryStorageInstance.setFactoryLogicAddress();
-    //     var owner2 = await factoryStorageInstance.ownerAddresses(2);
-    //     expect(web3.toChecksumAddress(owner1)).to.be(web3.toChecksumAddress(accounts[1]));
-    //     expect(web3.toChecksumAddress(owner2)).to.be(web3.toChecksumAddress(accounts[2]));
-    // })
 });
 
 contract('FactoryLogic', (accounts) => {
@@ -114,43 +106,11 @@ contract('FactoryStorage2', (accounts) => {
 
     it('openERC20Contract function should work', async () => {
         const result = await factoryLogicInstance.openERC20Contract('REP', true);
-        // console.log(factoryLogicInstance.address)
-        // console.log(accounts[0])
+
         var pcAddress = await factoryStorageInstance.positionContracts('REP', accounts[0]);
         const positionContractInstance = web3.eth.contract(PositionContractABI).at(pcAddress, (err,res)=>{return res;})
         expect(positionContractInstance.ownerAddress()).to.be(accounts[0].toLowerCase())
         expect(positionContractInstance.positionSize().toString()).to.be('0')
-
-        // const result1 = await factoryLogicInstance.openContractZRX();
-        // console.log(factoryLogicInstance.address)
-        // console.log(accounts[0])
-        // console.log(await factoryStorageInstance.ZRX(accounts[0]))
-        // // console.log(factoryLogicInstance.address)
-        // var event = await factoryStorageInstance.NewPositionContract({sender});
-
-
-        // console.log(event)
-        // console.log(result)
-        // var event = await factoryStorageInstance.NewRep({sender, caller, newPositionContractAddress, factoryLogicAddress});
-
-        // watch for changes
-        // event.watch(function(error, result){
-        //     if (!error) {
-        //         console.log(result);
-        //     } else {
-        //         console.error(error);
-        //     }});
-
-        //TODO: add event listening.
-        // var repContract = await factoryStorageInstance.REP(0);
-        // console.log(repContract);
-
-        // util.assertEventEquality(event.logs[0], NewRep({
-        //     sender: factoryLogicInstance,
-        //     caller: accounts[0],
-        //     newPositionContractAddress: '0x0',
-        //     factoryLogicAddress: factoryLogicInstance,
-        // }))
     });
 });
 

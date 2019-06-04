@@ -37,13 +37,12 @@ contract FactoryStorage {
 
     //TODO: think about - using SafeMath for uint;
     //TODO: add events
-    //uint256 public constant DECIMALS = 18;
 
     address public factoryLogicAddress;
 
     address[3] public ownerAddresses;
     address[] public userAddresses;
-    //TODO: figure out camelcase for the following
+    string[] public tokens;
 
     /**
     * @notice Constructs a new FactoryStorage
@@ -118,10 +117,10 @@ contract FactoryStorage {
         //TODO: ensure userAddress has been added and ticker is valid.
         require(factoryLogicAddress == msg.sender);
         positionContracts[ticker][userAddress] = newContractAddress;
+        addUser(userAddress)
         //TODO: shouldn't the following event include the ticker?
         emit NewPositionContract(userAddress, newContractAddress, msg.sender);
     }
-
 
     //TODO: aren't all the following functions not required if addNewTokenToPositionContracts works?!
 //    function updateTokenAddress(uint256 index, address newAddress) public {
