@@ -21,9 +21,10 @@ contract FactoryStorage {
     );
 
     //maybe the name positionContractAddresses is better?!
-    //ticker => userAddr => shortRepAddr
+    //ticker => userAddr => positionContractAddr
     //e.g. ticker = 'REP'
     mapping (string => mapping (address => address)) public positionContracts;
+
 
     /**
     * @notice the following give the ERC20 token address, ctoken, and Uniswap Exchange for a given token ticker symbol.
@@ -50,11 +51,14 @@ contract FactoryStorage {
     * @param owner2 The third owner (after msg.sender)
     */
     constructor(address owner1, address owner2) public {
+        //TODO: deal with keys and ownership
         ownerAddresses[0] = msg.sender;
         ownerAddresses[1] = owner1;
         ownerAddresses[2] = owner2;
 
-        //TODO: ensure all the following are accurate?!
+        tokens = ['DAI','ZRX','BAT','ETH'];
+
+        //TODO: ensure all the following are accurate for mainnet.
         tokenAddresses['DAI'] = 0x5592EC0cfb4dbc12D3aB100b257153436a1f0FEa;
         tokenAddresses['BAT'] = 0xbF7A7169562078c96f0eC1A8aFD6aE50f12e5A99;
         tokenAddresses['ZRX'] = 0xddea378A6dDC8AfeC82C36E9b0078826bf9e68B6;
@@ -88,19 +92,35 @@ contract FactoryStorage {
     */
     function addUser(address newAddress) public {
         require(factoryLogicAddress == msg.sender|| ownerAddresses[0] == msg.sender || ownerAddresses[1] == msg.sender || ownerAddresses[2] == msg.sender);
-        //TODO: THE ABOVE ALSO LEAVES US VULNERABLE: THE WHOLE SYSTEM GOES DOWN IF EVEN ONE KEY IS TAKEN
         userAddresses.push(newAddress);
         //UserAdded(userAddr);
     }
 
-    //TODO: is the following required?
     /**
-    * @notice Sets a FactoryLogic contract that this contract interacts with, this clause is responsibility for upgradeability.
+    * @notice Sets the newAddress of a position contract, this clause is responsibility for upgradeability.
     * @param newAddress the address of the new FactoryLogic contract
     */
-    function addTokenAddress(string memory ticker, address newAddress) public {
+    function updateTokenAddress(string memory ticker, address newAddress) public {
         require(factoryLogicAddress == msg.sender);
         tokenAddresses[ticker] = newAddress;
+    }
+
+    /**
+   * @notice Sets the newAddress of a position contract, this clause is responsibility for upgradeability.
+   * @param newAddress the address of the new FactoryLogic contract
+   */
+    function updatecTokenAddress(string memory ticker, address newAddress) public {
+        require(factoryLogicAddress == msg.sender);
+        ctokenAddresses[ticker] = newAddress;
+    }
+
+    /**
+  * @notice Sets the newAddress of a position contract, this clause is responsibility for upgradeability.
+  * @param newAddress the address of the new FactoryLogic contract
+  */
+    function updateExchangeAddress(string memory ticker, address newAddress) public {
+        require(factoryLogicAddress == msg.sender);
+        exchangeAddresses[ticker] = newAddress;
     }
 
     //  TODO: proper solidity style for following function
@@ -117,41 +137,8 @@ contract FactoryStorage {
         //TODO: ensure userAddress has been added and ticker is valid.
         require(factoryLogicAddress == msg.sender);
         positionContracts[ticker][userAddress] = newContractAddress;
-        addUser(userAddress)
+        addUser(userAddress);
         //TODO: shouldn't the following event include the ticker?
         emit NewPositionContract(userAddress, newContractAddress, msg.sender);
     }
-
-    //TODO: aren't all the following functions not required if addNewTokenToPositionContracts works?!
-//    function updateTokenAddress(uint256 index, address newAddress) public {
-//        require(factoryLogicAddress == msg.sender);
-//        tokenAddresses[index] = newAddress;
-//    }
-//
-//    function addcTokenAddress(address newAddress) public {
-//        require(factoryLogicAddress == msg.sender);
-//        ctokenAddresses['DAI'] = newAddress);
-//    }
-//
-//    function updatecTokenAddress(uint256 index, address newAddress) public {
-//        require(factoryLogicAddress == msg.sender);
-//        ctokenAddresses[index] = newAddress;
-//    }
-//
-//    function addExchangeAddress(address newAddress) public {
-//        require(factoryLogicAddress == msg.sender);
-//        exchangeAddresses['DAI'] = newAddress);
-//    }
-//
-//    function updateExchangeAddress(uint256 index, address newAddress) public {
-//        require(factoryLogicAddress == msg.sender);
-//        exchangeAddresses[index] = newAddress;
-//    }
-//
-////    function addPositionName(newKey) {
-////        require(factoryLogicAddress == msg.sender);
-////        exchangeAddresses[index] = newAddress;
-////    }
-
-    //    function getPositionNames () {}
 }

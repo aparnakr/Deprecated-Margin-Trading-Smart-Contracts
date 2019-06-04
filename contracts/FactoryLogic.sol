@@ -29,48 +29,69 @@ contract FactoryLogic {
     * @param ticker Type: string memory. The ticker symbol of the position contract to create.
     * @param isLeverage Type: bool. True if the first position to opened is a leveraged one, false if a short position.
     */
-    function openERC20Contract(string memory ticker, bool isLeverage) public {
+    //TODO: make ETH work for below
+    function openPositionContract(string memory ticker, bool isLeverage) public {
         address positionContract = factoryStorageContract.positionContracts(ticker,msg.sender);
 
         require(positionContract == address(0x0));
         //TODO: this flow below is redundant
-        if (isLeverage) {
-            PositionContract s = new PositionContract(
-                msg.sender,
-                ticker,
-                //TODO: ensure the following are correct
-                factoryStorageContract.tokenAddresses('DAI'),
-                factoryStorageContract.ctokenAddresses('DAI'),
-                factoryStorageContract.exchangeAddresses('DAI'),
-                factoryStorageContract.tokenAddresses(ticker),
-                factoryStorageContract.ctokenAddresses(ticker),
-                factoryStorageContract.exchangeAddresses(ticker),
-                'l'
-            );
-            //TODO: add user if they aren't in FactoryStorage
-            factoryStorageContract.addNewPositionContract(ticker, msg.sender, address(s));
+        if (ticker != 'ETH') {
+            if (isLeverage) {
+                PositionContract leverageContract = new PositionContract(
+                    msg.sender,
+                    ticker,
+                    //TODO: ensure the following are correct
+                    factoryStorageContract.tokenAddresses(ticker),
+                    factoryStorageContract.ctokenAddresses(ticker),
+                    factoryStorageContract.exchangeAddresses(ticker),
+                    factoryStorageContract.tokenAddresses('DAI'),
+                    factoryStorageContract.ctokenAddresses('DAI'),
+                    factoryStorageContract.exchangeAddresses('DAI'),
+                    'l'
+                );
+                //TODO: add user if they aren't in FactoryStorage
+                factoryStorageContract.addNewPositionContract(ticker, msg.sender, address(leverageContract));
+            } else {
+                PositionContract shortContract = new PositionContract(
+                    msg.sender,
+                    ticker,
+                    //TODO: ensure the following are correct
+                    factoryStorageContract.tokenAddresses('DAI'),
+                    factoryStorageContract.ctokenAddresses('DAI'),
+                    factoryStorageContract.exchangeAddresses('DAI'),
+                    factoryStorageContract.tokenAddresses(ticker),
+                    factoryStorageContract.ctokenAddresses(ticker),
+                    factoryStorageContract.exchangeAddresses(ticker),
+                    's'
+                );
+                //TODO: add user if they aren't in FactoryStorage
+            factoryStorageContract.addNewPositionContract(ticker, msg.sender, address(shortContract));
+            }
         } else {
-            PositionContract s = new PositionContract(
-                msg.sender,
-                ticker,
+            if (isLeverage) {
+                PositionETHContract leverageContract = new PositionContract(
+                    msg.sender,
+                    factoryStorageContract.ctokenAddresses(ticker),
+                    factoryStorageContract.tokenAddresses('DAI'),
+                    factoryStorageContract.ctokenAddresses('DAI'),
+                    factoryStorageContract.exchangeAddresses('DAI'),
+                    'l'
+                );
+                //TODO: add user if they aren't in FactoryStorage
+                factoryStorageContract.addNewPositionContract(ticker, msg.sender, address(leverageContract));
+            } else {
+                PositionETHContract shortContract = new PositionETHContract(
+                    msg.sender,
                 //TODO: ensure the following are correct
-                factoryStorageContract.tokenAddresses('DAI'),
-                factoryStorageContract.ctokenAddresses('DAI'),
-                factoryStorageContract.exchangeAddresses('DAI'),
-                factoryStorageContract.tokenAddresses(ticker),
-                factoryStorageContract.ctokenAddresses(ticker),
-                factoryStorageContract.exchangeAddresses(ticker),
-                's'
-            );
-            //TODO: add user if they aren't in FactoryStorage
-        factoryStorageContract.addNewPositionContract(ticker, msg.sender, address(s));
+                    factoryStorageContract.tokenAddresses('DAI'),
+                    factoryStorageContract.ctokenAddresses('DAI'),
+                    factoryStorageContract.exchangeAddresses('DAI'),
+                    factoryStorageContract.ctokenAddresses(ticker),
+                    's'
+                );
+                //TODO: add user if they aren't in FactoryStorage
+                factoryStorageContract.addNewPositionContract(ticker, msg.sender, address(shortContract));
+            }
         }
     }
-
-//    function openETHContract(bool isLeverage) public {
-//        if(ETH[msg.sender] == address(0x0)) {
-//            positionContract s = new positionContract(msg.sender, "ETH", tokenAddresses[0], ctokenAddresses[0], tokenExchangeAddresses[0], tokenAddresses[2],  ctokenAddresses[2], tokenExchangeAddresses[2], "s");
-//            ETH[msg.sender] = address(s);
-//        }
-//    }
 }
