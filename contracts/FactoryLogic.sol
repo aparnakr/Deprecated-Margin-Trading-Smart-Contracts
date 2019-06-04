@@ -1,6 +1,7 @@
 pragma solidity ^0.5.8;
 import {PositionContract} from "./PositionContract.sol";
 import {FactoryStorage} from "./FactoryStorage.sol";
+//import {PositionETHContract} from "./PositionETHContract.sol"
 
 /**
  * @title Opyns's FactoryLogic Contract
@@ -35,7 +36,7 @@ contract FactoryLogic {
 
         require(positionContract == address(0x0));
         //TODO: this flow below is redundant
-        if (ticker != 'ETH') {
+//        if (ticker != 'ETH') {
             if (isLeverage) {
                 PositionContract leverageContract = new PositionContract(
                     msg.sender,
@@ -67,31 +68,31 @@ contract FactoryLogic {
                 //TODO: add user if they aren't in FactoryStorage
             factoryStorageContract.addNewPositionContract(ticker, msg.sender, address(shortContract));
             }
-        } else {
-            if (isLeverage) {
-                PositionETHContract leverageContract = new PositionContract(
-                    msg.sender,
-                    factoryStorageContract.ctokenAddresses(ticker),
-                    factoryStorageContract.tokenAddresses('DAI'),
-                    factoryStorageContract.ctokenAddresses('DAI'),
-                    factoryStorageContract.exchangeAddresses('DAI'),
-                    'l'
-                );
-                //TODO: add user if they aren't in FactoryStorage
-                factoryStorageContract.addNewPositionContract(ticker, msg.sender, address(leverageContract));
-            } else {
-                PositionETHContract shortContract = new PositionETHContract(
-                    msg.sender,
-                //TODO: ensure the following are correct
-                    factoryStorageContract.tokenAddresses('DAI'),
-                    factoryStorageContract.ctokenAddresses('DAI'),
-                    factoryStorageContract.exchangeAddresses('DAI'),
-                    factoryStorageContract.ctokenAddresses(ticker),
-                    's'
-                );
-                //TODO: add user if they aren't in FactoryStorage
-                factoryStorageContract.addNewPositionContract(ticker, msg.sender, address(shortContract));
-            }
-        }
+//        } else {
+//            if (isLeverage) {
+//                PositionETHContract leverageContract = new PositionContract(
+//                    msg.sender,
+//                    factoryStorageContract.ctokenAddresses(ticker),
+//                    factoryStorageContract.tokenAddresses('DAI'),
+//                    factoryStorageContract.ctokenAddresses('DAI'),
+//                    factoryStorageContract.exchangeAddresses('DAI'),
+//                    'l'
+//                );
+//                //TODO: add user if they aren't in FactoryStorage
+//                factoryStorageContract.addNewPositionContract(ticker, msg.sender, address(leverageContract));
+//            } else {
+//                PositionETHContract shortContract = new PositionETHContract(
+//                    msg.sender,
+//                //TODO: ensure the following are correct
+//                    factoryStorageContract.tokenAddresses('DAI'),
+//                    factoryStorageContract.ctokenAddresses('DAI'),
+//                    factoryStorageContract.exchangeAddresses('DAI'),
+//                    factoryStorageContract.ctokenAddresses(ticker),
+//                    's'
+//                );
+//                //TODO: add user if they aren't in FactoryStorage
+//                factoryStorageContract.addNewPositionContract(ticker, msg.sender, address(shortContract));
+//            }
+//        }
     }
 }

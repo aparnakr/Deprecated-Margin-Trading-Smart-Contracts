@@ -7,6 +7,8 @@ pragma solidity ^0.5.8;
  */
 contract FactoryStorage {
 
+    //TODO: add more events
+
     event NewPositionContract(
         address userAddress,
         address newPositionContractAddress,
@@ -20,11 +22,22 @@ contract FactoryStorage {
         address exchangeAddr
     );
 
+    event UserAdded(
+        address userAddr
+    );
+
+    event TickerAdded(
+        string ticker
+    );
+
+    event FactoryLogicChanged(
+        address factoryLogicAddr
+    );
+
     //maybe the name positionContractAddresses is better?!
     //ticker => userAddr => positionContractAddr
     //e.g. ticker = 'REP'
     mapping (string => mapping (address => address)) public positionContracts;
-
 
     /**
     * @notice the following give the ERC20 token address, ctoken, and Uniswap Exchange for a given token ticker symbol.
@@ -36,14 +49,26 @@ contract FactoryStorage {
     mapping (string => address) public ctokenAddresses;
     mapping (string => address) public exchangeAddresses;
 
-    //TODO: think about - using SafeMath for uint;
-    //TODO: add events
+    //TODO: think about - using CarefulMath for uint;
 
     address public factoryLogicAddress;
 
+    /**
+    * @notice The array of owners with write privileges.
+    */
     address[3] public ownerAddresses;
+
+    /**
+    * @notice The array of all users with contracts.
+    */
     address[] public userAddresses;
-    string[] public tokens;
+    string[] public tickers;
+
+    /**
+    * @notice These mappings act as sets to see if a key is in string[] public tokens or address[] public userAddresses
+    */
+    mapping (address => bool) public userAddressesSet;
+    mapping (address => bool) public tickerSet;
 
     /**
     * @notice Constructs a new FactoryStorage
@@ -56,7 +81,11 @@ contract FactoryStorage {
         ownerAddresses[1] = owner1;
         ownerAddresses[2] = owner2;
 
-        tokens = ['DAI','ZRX','BAT','ETH'];
+        tickers = ['DAI','ZRX','BAT','ETH'];
+        tickerSet['DAI'] = true;
+        tickerSet['ZRX'] = true;
+        tickerSet['BAT'] = true;
+        tickerSet['ETH'] = true;
 
         //TODO: ensure all the following are accurate for mainnet.
         tokenAddresses['DAI'] = 0x5592EC0cfb4dbc12D3aB100b257153436a1f0FEa;
@@ -81,9 +110,10 @@ contract FactoryStorage {
     * @param newAddress the address of the new FactoryLogic contract
     */
     function setFactoryLogicAddress(address newAddress) public {
-        require(ownerAddresses[0] == msg.sender || ownerAddresses[1] == msg.sender || ownerAddresses[2] == msg.sender);
+        require(factoryLogicAddress == msg.sender|| ownerAddresses[0] == msg.sender || ownerAddresses[1] == msg.sender || ownerAddresses[2] == msg.sender);
         //TODO: better security practices required than the above
         factoryLogicAddress = newAddress;
+        emit FactoryLogicChanged(newAddress);
     }
 
     /**
@@ -92,38 +122,64 @@ contract FactoryStorage {
     */
     function addUser(address newAddress) public {
         require(factoryLogicAddress == msg.sender|| ownerAddresses[0] == msg.sender || ownerAddresses[1] == msg.sender || ownerAddresses[2] == msg.sender);
-        userAddresses.push(newAddress);
-        //UserAdded(userAddr);
+        //TODO: ensure that this is how it works.
+        if (!userAddressesSet(newAddress)) {
+            userAddresses.push(newAddress);
+            userAddressesSet(userAddressesSet) = true;
+            emit UserAdded(userAddr);
+        }
+    }
+
+    /**
+   * @notice Adds a new token to the tokens array.
+   * @param ticker ticker symbol of the new token
+   */
+    function addTicker(string memory ticker) public {
+        require(factoryLogicAddress == msg.sender|| ownerAddresses[0] == msg.sender || ownerAddresses[1] == msg.sender || ownerAddresses[2] == msg.sender);
+        //TODO: ensure that this is how it works.
+        if (!tickerSet(ticker)) {
+            tickers.push(ticker);
+            tickerSet(ticker) = true;
+            emit TickerAdded(ticker);
+        }
+    }
+
+    /**
+    * @notice Sets the newAddress of a ticker in the tokenAddresses array.
+    * @param ticker string ticker symbol of the new token being added
+    * @param newAddress the new address of the token
+    */
+    function updateTokenAddress(string memory ticker, address newAddress) public {
+        require(factoryLogicAddress == msg.sender|| ownerAddresses[0] == msg.sender || ownerAddresses[1] == msg.sender || ownerAddresses[2] == msg.sender);
+        tokenAddresses[ticker] = newAddress;
+    }
+
+    /**
+    * @notice Sets the newAddress of a ticker in the ctokenAddresses array.
+    * @param newAddress the address of the ctoken
+    */
+    function updatecTokenAddress(string memory ticker, address newAddress) public {
+        require(factoryLogicAddress == msg.sender|| ownerAddresses[0] == msg.sender || ownerAddresses[1] == msg.sender || ownerAddresses[2] == msg.sender);
+        ctokenAddresses[ticker] = newAddress;
     }
 
     /**
     * @notice Sets the newAddress of a position contract, this clause is responsibility for upgradeability.
     * @param newAddress the address of the new FactoryLogic contract
     */
-    function updateTokenAddress(string memory ticker, address newAddress) public {
-        require(factoryLogicAddress == msg.sender);
-        tokenAddresses[ticker] = newAddress;
-    }
-
-    /**
-   * @notice Sets the newAddress of a position contract, this clause is responsibility for upgradeability.
-   * @param newAddress the address of the new FactoryLogic contract
-   */
-    function updatecTokenAddress(string memory ticker, address newAddress) public {
-        require(factoryLogicAddress == msg.sender);
-        ctokenAddresses[ticker] = newAddress;
-    }
-
-    /**
-  * @notice Sets the newAddress of a position contract, this clause is responsibility for upgradeability.
-  * @param newAddress the address of the new FactoryLogic contract
-  */
     function updateExchangeAddress(string memory ticker, address newAddress) public {
-        require(factoryLogicAddress == msg.sender);
+        require(factoryLogicAddress == msg.sender|| ownerAddresses[0] == msg.sender || ownerAddresses[1] == msg.sender || ownerAddresses[2] == msg.sender);
         exchangeAddresses[ticker] = newAddress;
     }
 
     //  TODO: proper solidity style for following function
+    /**
+    * @notice Sets the newAddress of a position contract, this clause is responsibility for upgradeability.
+    * @param ticker the ticker symbol for this new token
+    * @param tokenAddr the address of the token
+    * @param cTokenAddr the address of the cToken
+    * @param exchangeAddr the address of the particular DEX pair
+    */
     function addNewTokenToPositionContracts(string memory ticker, address tokenAddr, address cTokenAddr, address exchangeAddr) public {
         require(factoryLogicAddress == msg.sender|| ownerAddresses[0] == msg.sender || ownerAddresses[1] == msg.sender || ownerAddresses[2] == msg.sender);
         //TODO: do we want to first ensure ticker not already there?!
@@ -133,6 +189,12 @@ contract FactoryStorage {
         emit NewTokenAddedToPositionContract(ticker, tokenAddr, cTokenAddr, exchangeAddr);
     }
 
+    /**
+    * @notice Sets the newAddress of a position contract, this clause is responsibility for upgradeability.
+    * @param ticker the ticker symbol that this PositionContract corresponds to
+    * @param userAddress the address of the user creating this PositionContract
+    * @param newContractAddress the address of the new position contract
+    */
     function addNewPositionContract(string memory ticker, address userAddress, address newContractAddress) public {
         //TODO: ensure userAddress has been added and ticker is valid.
         require(factoryLogicAddress == msg.sender);
