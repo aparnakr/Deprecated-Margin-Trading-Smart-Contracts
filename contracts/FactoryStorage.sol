@@ -8,7 +8,14 @@ contract FactoryStorage {
         address factoryLogicAddress
     );
 
-   //maybe the name positionContractAddresses is better?!
+    event NewTokenAddedToPositionContract(
+        string ticker,
+        address tokenAddr,
+        address cTokenAddr,
+        address exchangeAddr
+    );
+
+    //maybe the name positionContractAddresses is better?!
     //ticker => userAddr => shortRepAddr
         //e.g. ticker = 'REP'
     mapping (string => mapping (address => address)) public positionContracts;
@@ -69,15 +76,18 @@ contract FactoryStorage {
 
     function addUser(address newAddress) public {
         require(factoryLogicAddress == msg.sender|| ownerAddresses[0] == msg.sender || ownerAddresses[1] == msg.sender || ownerAddresses[2] == msg.sender);
-        //TODO: THE FOLLOWING ALSO LEAVES US VULNERABLE: THE WHOLE SYSTEM GOES DOWN IF EVEN ONE KEY IS TAKEN
+        //TODO: THE ABOVE ALSO LEAVES US VULNERABLE: THE WHOLE SYSTEM GOES DOWN IF EVEN ONE KEY IS TAKEN
         userAddresses.push(newAddress);
+//        UserAdded(userAddr);
     }
 
+    //TODO: is the following required?
     function addTokenAddress(string memory ticker, address newAddress) public {
         require(factoryLogicAddress == msg.sender);
         tokenAddresses[ticker] = newAddress;
     }
 
+    //TODO: aren't all the following functions not required if addNewTokenToPositionContracts works?!
 //    function updateTokenAddress(uint256 index, address newAddress) public {
 //        require(factoryLogicAddress == msg.sender);
 //        tokenAddresses[index] = newAddress;
@@ -110,12 +120,13 @@ contract FactoryStorage {
 
 
 //  TODO: proper solidity style for following function
-    function addNewTokenToPositionContracts (string memory ticker, address tokenAddr, address cTokenAddr, address exchangeAddr) public {
+    function addNewTokenToPositionContracts(string memory ticker, address tokenAddr, address cTokenAddr, address exchangeAddr) public {
         require(factoryLogicAddress == msg.sender|| ownerAddresses[0] == msg.sender || ownerAddresses[1] == msg.sender || ownerAddresses[2] == msg.sender);
         //TODO: do we want to first ensure ticker not already there?!
         tokenAddresses[ticker] = tokenAddr;
         ctokenAddresses[ticker] = cTokenAddr;
         exchangeAddresses[ticker] = exchangeAddr;
+        emit NewTokenAddedToPositionContract(ticker, tokenAddr, cTokenAddr, exchangeAddr);
     }
 
     function addNewPositionContract(string memory ticker, address userAddress, address newContractAddress) public {
