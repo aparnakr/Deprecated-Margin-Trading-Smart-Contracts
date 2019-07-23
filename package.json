@@ -1,0 +1,14 @@
+{
+    "name": "opynfinance",
+    "version": "",
+    "description": "",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/opynfinance/Solidity-Contracts/"
+    },
+    "dependencies": {
+        "solc": "0.5.8",
+        "openzeppelin-solidity": "2.3.0"
+    },
+    "license": ""
+}
