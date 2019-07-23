@@ -1,4 +1,4 @@
-pragma solidity ^0.5.8;
+pragma solidity 0.5.8;
 
 /**
  * @title Opyns's FactoryStorage Contract
@@ -103,8 +103,8 @@ contract FactoryStorage {
         exchangeAddresses['BAT'] = 0x2E642b8D59B45a1D8c5aEf716A84FF44ea665914;
         exchangeAddresses['ZRX'] = 0xaE76c84C9262Cdb9abc0C2c8888e62Db8E22A0bF;
         exchangeAddresses['REP'] = 0x48B04d2A05B6B604d8d5223Fd1984f191DED51af;
-        
-        // RINKEBY 
+
+        // RINKEBY
         // tokenAddresses['DAI'] = 0x5592EC0cfb4dbc12D3aB100b257153436a1f0FEa;
         // tokenAddresses['BAT'] = 0xbF7A7169562078c96f0eC1A8aFD6aE50f12e5A99;
         // tokenAddresses['ZRX'] = 0xddea378A6dDC8AfeC82C36E9b0078826bf9e68B6;
@@ -120,8 +120,8 @@ contract FactoryStorage {
         // exchangeAddresses['BAT'] = 0x5cEDbFc1C6041Df417173Aa552040D79f09d631c;
         // exchangeAddresses['ZRX'] = 0x4dCF4017ffbffABB4F8f8378d6c53286590d4625;
         // exchangeAddresses['REP'] = 0x67B67cb021a956D1956884B99cE2FB7dc835a080;
-        
-        
+
+
     }
 
     /**
@@ -222,7 +222,7 @@ contract FactoryStorage {
         //TODO: shouldn't the following event include the ticker?
         emit NewPositionContract(userAddress, newContractAddress, msg.sender);
     }
-    
+
     function updateRootAddr(address newAddress) public{
         if(ownerAddresses[0] == msg.sender){
             ownerAddresses[0] = newAddress;

@@ -1,13 +1,13 @@
-pragma solidity ^0.5.2;
-import {CErc20, CToken, ComptrollerInterface} from "./CErc20.sol";
-import {CEther} from "./CEther.sol";
-import {UniswapExchangeInterface} from "./uniswap.sol";
-import {ERC20Interface} from "./ERC20.sol";
-import {Comptroller} from "./Comptroller.sol";
+pragma solidity 0.5.8;
+import {CErc20, CToken, ComptrollerInterface} from "./lib/CErc20.sol";
+import {CEther} from "./lib/CEther.sol";
+import {UniswapExchangeInterface} from "./lib/uniswap.sol";
+import {ERC20Interface} from "./lib/ERC20.sol";
+import {Comptroller} from "./lib/Comptroller.sol";
 
 
 contract PositionContract{
-    
+
     // The user's address
     address public ownerAddress;
     string public tradeType;
@@ -23,20 +23,20 @@ contract PositionContract{
 
     uint256 public positionSize;
 
-    
+
     uint256 private tokenBalance;
     uint256 private borrowBalance;
     uint256 private collateralToSupply;
 
     address private factoryLogicAddress;
-    
+
     event positionOpened(
         uint256 positionSize);
-        
+
     event positionClosed(
         uint256 newPositionSize
         );
-        
+
     event collateralAdded(
         uint256 amtCollateralAdded);
 
@@ -65,7 +65,7 @@ contract PositionContract{
         cToken = CErc20(_cTokenAddr);
         tokenExchange = UniswapExchangeInterface(_tokenExchangeAddr);
     }
-    
+
     // This function transfers in the collateral
     function transferInCollateral(uint256 collateralAmt) private {
         require(msg.sender == ownerAddress);
@@ -96,8 +96,8 @@ contract PositionContract{
         uint error = cToken.borrow(amt);
         assert(error == 0);
     }
-    
-    
+
+
 
     // This function exchanges the token borrowed from compound for more collateral tokens on uniswap
     function swapTokenToCollateral(uint256 amt) private {
@@ -106,7 +106,7 @@ contract PositionContract{
         token.approve(address(tokenExchange), 1000000000000000000000000000000000000000);
         tokenExchange.tokenToTokenTransferInput(amt, 1, 1, 16517531290, ownerAddress, address(collateral));
     }
-    
+
     function transferFees () private {
         uint256 tokenBal = collateral.balanceOf(address(this));
         collateral.approve(factoryLogicAddress, tokenBal);
@@ -137,7 +137,7 @@ contract PositionContract{
         // Ensure this is an 'l' or an 's'
         if (keccak256(abi.encodePacked(_tradeType)) != keccak256(abi.encodePacked(tradeType))) {
             calcBorrowBal();
-            // TODO: test this. borrowBalance shoud be negligible. 
+            // TODO: test this. borrowBalance shoud be negligible.
             require(positionSize == 0);
             tradeType = _tradeType;
 
@@ -164,7 +164,7 @@ contract PositionContract{
     function getBorrowBalance() public view returns (uint256) {
        return cToken.borrowBalanceStored(address(this));
     }
-    
+
     function getAccountLiquidity() public view returns (uint, uint, uint) {
         Comptroller troll = Comptroller(0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B);
         return troll.getAccountLiquidity(address(this));
@@ -189,16 +189,16 @@ contract PositionContract{
     function redeemCollateral(uint256 collateralAmt) private {
          require(cCollateral.redeem(collateralAmt) == 0);
     }
-    
+
     // This functiom calculates the supplyBalance balance of the collateral (including interest) from compound
     function calcSupplyBalance() private view returns (uint256) {
          return cCollateral.balanceOf(address(this)) ;
     }
-    
+
     function getSupplyBalance() public view returns (uint256) {
          return cCollateral.balanceOf(address(this)) * cCollateral.exchangeRateStored();
     }
-    
+
     function getSupplyBorrowRatio() public view returns (uint256) {
         uint256 ratio = getSupplyBalance() / getBorrowBalance();
         return ratio;
@@ -216,7 +216,7 @@ contract PositionContract{
         token.approve(factoryLogicAddress, tokenBal);
         token.transfer(factoryLogicAddress, tokenBal);
     }
-    
+
     // This function calls uniswap to get the prices
     function getCollateralToSupply(uint256 repayAmt) public view returns (uint256){
         uint256 bBal = getBorrowBalance();
@@ -252,7 +252,7 @@ contract PositionContract{
                 require(amtClosed <= positionSize);
                 positionSize -= amtClosed;
             }
-            
+
         emit positionClosed(positionSize);
         }
     }
@@ -265,4 +265,3 @@ contract PositionContract{
         emit collateralAdded(collateralAmt);
     }
 }
-

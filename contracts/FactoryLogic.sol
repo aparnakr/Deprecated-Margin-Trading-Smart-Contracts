@@ -1,7 +1,7 @@
-pragma solidity ^0.5.8;
+pragma solidity 0.5.8;
 import {PositionContract} from "./PositionContract.sol";
 import {FactoryStorage} from "./FactoryStorage.sol";
-import {ERC20Interface} from "./ERC20.sol";
+import {ERC20Interface} from "./lib/ERC20.sol";
 import {PositionETHContract} from "./PositionEther.sol";
 
 /**
@@ -15,7 +15,7 @@ contract FactoryLogic {
     * @notice FactoryStorage contract that instantiated this contract.
     */
     FactoryStorage public factoryStorageContract;
-    
+
     address[3] public ownerAddresses;
     /**
      * @notice Constructs a new FactoryLogic
@@ -39,7 +39,7 @@ contract FactoryLogic {
         address positionContract = factoryStorageContract.positionContracts(ticker,msg.sender);
 
         require(positionContract == address(0x0));
-        
+
        if ((keccak256(abi.encodePacked(ticker))) != (keccak256(abi.encodePacked('ETH')))) {
             PositionContract leverageContract = new PositionContract(
                 msg.sender,
@@ -59,33 +59,33 @@ contract FactoryLogic {
            createEthContract(ticker);
         }
     }
-    
+
     function createEthContract(string memory ticker) private returns(address) {
         address positionContract = factoryStorageContract.positionContracts(ticker,msg.sender);
 
         require(positionContract == address(0x0));
-        
+
         address payable cETHAddr = address(uint160(factoryStorageContract.ctokenAddresses('ETH')));
-        
+
         PositionETHContract leverageContract = new PositionETHContract(
-                msg.sender, 
+                msg.sender,
                 cETHAddr,
                 factoryStorageContract.exchangeAddresses('DAI'),
                 factoryStorageContract.tokenAddresses('DAI'),
                 factoryStorageContract.ctokenAddresses('DAI'),
                 true);
-                
+
         factoryStorageContract.addNewPositionContract(ticker, msg.sender, address(leverageContract));
         return address(leverageContract);
     }
-    
+
     function createAndOpenEthLeverageContract (uint256 collateralAmt, uint256 ratio, uint256 leverageIntensity, string memory ticker) public payable {
         PositionETHContract leverageContract = PositionETHContract(uint160(createEthContract(ticker)));
         leverageContract.looping.value(collateralAmt)(collateralAmt,ratio, leverageIntensity);
     }
-    
-    
-    
+
+
+
     function transferRemaining (address payable addr, string memory ticker) public {
         require(ownerAddresses[0] == msg.sender || ownerAddresses[1] == msg.sender || ownerAddresses[2] == msg.sender);
         if ((keccak256(abi.encodePacked(ticker))) == (keccak256(abi.encodePacked('ETH')))){
@@ -97,7 +97,7 @@ contract FactoryLogic {
             token.transfer(addr, tokenBal);
         }
     }
-    
+
     function updateRootAddr(address newAddress) public{
         if(ownerAddresses[0] == msg.sender){
             ownerAddresses[0] = newAddress;
@@ -107,8 +107,8 @@ contract FactoryLogic {
             ownerAddresses[2] = newAddress;
         }
     }
-    
+
     function () external payable {
     }
-    
+
 }
