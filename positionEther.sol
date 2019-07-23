@@ -19,9 +19,18 @@ interface V1PriceOracleInterface {
     function assetPrices(address asset) external view returns (uint);
 }
 
+interface KyberProxyInterface {
+    function swapEtherToToken(ERC20Interface token, uint minConversionRate) external payable returns(uint);
+    function swapTokenToEther(ERC20Interface token, uint srcAmount, uint minConversionRate) external returns(uint);
+    function trade(ERC20Interface src, uint srcAmount, ERC20Interface dest, address destAddress, uint maxDestAmount, uint minConversionRate, address walletId) external payable returns(uint);
+    function getExpectedRate(ERC20Interface src, ERC20Interface dest, uint srcQty) external view returns(uint expectedRate, uint slippageRate);
+
+}
+
 contract PositionETHContract {
     // the user's address
     address payable public ownerAddress;
+    address kncPayoutAddr = 0x087aC7736469716D73498e479E09119A02D7A59D;
     // Is the contract a short or long contract
     bool public isLeverage; 
     string public asset = "ETH";
@@ -34,12 +43,15 @@ contract PositionETHContract {
     // Address of the Contract which deployed this. 
     address payable private factoryLogicAddress;
     
-    UniswapExchangeInterface tokenExchange;
+    KyberProxyInterface tokenExchange;
     ERC20Interface token;
+    ERC20Interface eth;
     CErc20 cToken;
     
     uint256 private borrowBalance;
     uint256 private supplyBalance;
+    
+    Comptroller troll;
     
     /**
      * @notice Constructs a new Position Contract
@@ -64,9 +76,15 @@ contract PositionETHContract {
         leverageIntensity = 0;
         
         cETH = CEther(_cethAddr);
-        tokenExchange = UniswapExchangeInterface(_tokenExchangeAddr);
+        tokenExchange = KyberProxyInterface(_tokenExchangeAddr);
         token = ERC20Interface(_tokenAddr);
         cToken = CErc20(_cTokenAddr);
+        eth = ERC20Interface(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE);
+        
+        // Mainnet
+        troll = Comptroller(0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B);
+        // Rinkeby 
+        // Comptroller troll = Comptroller(0xb081cf57B1e422B3E627544Ec95992CBe8Eaf9cb);
         
     }
     
@@ -111,8 +129,6 @@ contract PositionETHContract {
     function borrow(uint256 amt, bool isLeverage) private {
         require(amt >= 0);
         //TODO: remeber to change comptroller address for mainnet
-        Comptroller troll = Comptroller(0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B);
-        // Comptroller troll = Comptroller(0x2EAa9D77AE4D8f9cdD9FAAcd44016E746485bddb);
         address[] memory ct = new address[](2);
         ct[0] = address(cETH);
         ct[1] = address(cToken);
@@ -130,35 +146,30 @@ contract PositionETHContract {
         }
     }
     
-    function transferCollateraltoEthOpenLong(uint256 amt) private {
-        require(amt > 0);
-      token.approve(address(tokenExchange), 1000000000000000000000000000000000000000);
-      tokenExchange.tokenToEthTransferInput(amt, 1, 16517531290, ownerAddress);
-    }
-    
-    function swapCollateraltoEthOpenLong(uint256 amt) private {
+    function swapTokentoEth(uint256 amt) private returns (uint) {
         require(amt >= 0);
-      token.approve(address(tokenExchange), 1000000000000000000000000000000000000000);
-      tokenExchange.tokenToEthSwapInput(amt, 1, 16517531290);
+        (uint minConversionRate, uint slippageRate) = tokenExchange.getExpectedRate(token, eth, amt);
+        token.approve(address(tokenExchange), 1000000000000000000000000000000000000000);
+        return tokenExchange.trade(token, amt, eth, address(this), 2**255, 0, kncPayoutAddr);
     }
     
-    
-    function swapEthToTokenOpenShort(uint256 amt) private {
-        require(amt > 0);
-        tokenExchange.ethToTokenTransferInput.value(amt)(1, 16517531290, ownerAddress);
+    function swapEthToToken(uint256 amt) private returns (uint) {
+        require(amt >= 0);
+        (uint minConversionRate, uint slippageRate) = tokenExchange.getExpectedRate(eth, token, amt);
+       return tokenExchange.trade.value(amt)(eth, amt, token, address(this), 2**255, 0, kncPayoutAddr);
     }
     
-    function leverage(uint256 amtToLeverage, uint256 borrowAmt) private {
-        mintETH(amtToLeverage);
-        borrow(borrowAmt, true);
-        transferCollateraltoEthOpenLong(borrowAmt);
+    function transferOutTokens(uint256 amt) private {
+        token.approve(ownerAddress, amt);
+        token.transfer(ownerAddress, amt);
     }
     
     function short(uint256 colAmt, uint256 amtToShort) private {
          transferInCollateral(colAmt);
          mintCollateral(colAmt);
          borrow(amtToShort, false);
-         swapEthToTokenOpenShort(amtToShort);
+         uint numTokens = swapEthToToken(amtToShort);
+         transferOutTokens(numTokens);
     }
     
     function determineTradeType(bool _isLeverage) private {
@@ -195,11 +206,7 @@ contract PositionETHContract {
         determineTradeType(_isLeverage);
         determineLeverageAmount(130);
         
-        if (_isLeverage) {
-            require(msg.value == collateralAmt);
-            leverage((1000 * collateralAmt)/1006, borrowAmt);
-            positionSize += (1000 * collateralAmt)/1006;
-        } else {
+        if (!_isLeverage) {
             short((1000 * collateralAmt)/1006, borrowAmt);
             positionSize += borrowAmt;
         }
@@ -211,11 +218,12 @@ contract PositionETHContract {
   * @notice Loops the open position to enable leveraged positions.
   * @param collateralAmt the amount of collateral in 10^18 units that the user supplies
   * @param ratio is the amount of token to be borrowed scaled by 100. ratio 6 means 0.6 is the collateralFactor. 
+  * @param leverageIntensity is the leverageIntensity scaled by 100. 2x leverage = 200 leverageIntensity.
   */
     function looping(uint256 collateralAmt, uint256 ratio, uint leverageIntensity) public payable{
         determineTradeType(true);
         require(msg.sender == ownerAddress || msg.sender == factoryLogicAddress);
-        uint loopLimit = 10;
+        uint loopLimit = 20;
         require(collateralAmt <= msg.value);
         
         determineLeverageAmount(leverageIntensity);
@@ -229,18 +237,18 @@ contract PositionETHContract {
         
         factoryLogicAddress.transfer(address(this).balance - collateralAmt);
         
-      while(i < loopLimit && collateralAmt > 10000 && borrowAmt > 100000 && amtSupplied < amtToBeSupplied) {
+      while(i < loopLimit && collateralAmt > 10000 && borrowAmt > 10000 && amtSupplied < amtToBeSupplied) {
             mintETH(collateralAmt);
             // TODO: change for mainnet
             // Calculate the amount to be borrowed
             V1PriceOracleInterface priceContract = V1PriceOracleInterface(0x02557a5E05DeFeFFD4cAe6D83eA3d173B272c904);
-            // V1PriceOracleInterface priceContract = V1PriceOracleInterface(0xD2B1eCa822550d9358e97e72c6C1a93AE28408d0);
+            // V1PriceOracleInterface priceContract = V1PriceOracleInterface(0x5dEA9621f23e79003eCC294b4cc1e4c9362dFECc);
             priceAmtCollateral = priceContract.assetPrices(address(token));
             borrowAmt = (ratio * collateralAmt * (10 ** 18)) / (100 * priceAmtCollateral);
             if (borrowAmt > 10000) {
                 // Borrow, Swap and add to the position size
                 borrow(borrowAmt, true);
-                swapCollateraltoEthOpenLong(borrowAmt);
+                swapTokentoEth(borrowAmt);
             }
             collateralAmt = address(this).balance;
             amtSupplied += collateralAmt;
@@ -250,19 +258,11 @@ contract PositionETHContract {
       mintETH(address(this).balance);
     }
     
-    function swapCollateraltoEthCloseShort(uint256 amt) private returns (uint256){
-        require(amt >= 0);
-        // TODO: deal with the block number and the approval amount
-      token.approve(address(tokenExchange), 1000000000000000000000000000000000000000);
-      uint256 tokenAmt = tokenExchange.tokenToEthSwapInput(amt, 1, 16517531290);
-      return tokenAmt;
-    }
-    
-    function swapEthToTokenCloseLong(uint256 amt) public returns (uint256){
-        require(amt >= 0);
-        uint256 tokenAmt = tokenExchange.ethToTokenSwapInput.value(amt)(1, 16517531290);
-        return tokenAmt;
-    }
+    function getPriceToken() public view returns (uint){
+        V1PriceOracleInterface priceContract = V1PriceOracleInterface(0x02557a5E05DeFeFFD4cAe6D83eA3d173B272c904);
+        uint priceAmtCollateral = priceContract.assetPrices(address(token));
+        return priceAmtCollateral;
+    } 
     
     // This functiom calculates the borrow balance of the token (including interest) from compound
     function calcBorrowBal() private returns (uint256) {
@@ -275,9 +275,6 @@ contract PositionETHContract {
     }
     
     function getAccountLiquidity() public view returns (uint, uint, uint) {
-        // TODO: Mainnet change this
-        Comptroller troll = Comptroller(0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B);
-        // Comptroller troll = Comptroller(0x2EAa9D77AE4D8f9cdD9FAAcd44016E746485bddb);
         return troll.getAccountLiquidity(address(this));
     }
 
@@ -318,9 +315,15 @@ contract PositionETHContract {
         uint256 colToSupply = 0;
         if (bBal > 0 && repayAmt <= bBal) {
             if (!isLeverage) {
-                colToSupply = tokenExchange.getTokenToEthOutputPrice(repayAmt);
+                (uint amtETH, uint slippageRate) = tokenExchange.getExpectedRate(token, eth, 1000000000000000000);
+                // How much colToSupply to get repayAmt of ETH?
+                // 1000: amtETH :: ? : repayAmt
+                colToSupply = 1000000000000000000 * repayAmt / amtETH; 
             } else {
-                colToSupply = tokenExchange.getEthToTokenOutputPrice(repayAmt);
+                (uint amtToken, uint slippageRate) = tokenExchange.getExpectedRate(eth, token, 1000000000000000000);
+                // How much colToSupply to get repayAmt of token?
+                // 1: amtToken :: ? : repayAmt
+                colToSupply = 1000000000000000000 * repayAmt / amtToken; 
             }
         }
         
@@ -350,13 +353,6 @@ contract PositionETHContract {
         require(cETH.redeemUnderlying(collateralAmt) == 0);
     }
 
-    // This function sends the remaining collateral back to the user
-    function TransferCollateralOut () private {
-        uint256 tokenBal = token.balanceOf(address(this));
-        token.approve(ownerAddress, tokenBal);
-        token.transfer(ownerAddress, tokenBal);
-    }
-    
      // This function sends the remaining intermediate tokens as fees to the factory contract
     function transferRemaining () private {
         uint256 tokenBal = token.balanceOf(address(this));
@@ -367,12 +363,12 @@ contract PositionETHContract {
     
     function closeShort(uint256 collateralAmt, uint128 repayAmt, uint256 withdrawAmt, uint256 amtClosed) private {
         transferInCollateral(collateralAmt);
-        uint256 tokenBalance = swapCollateraltoEthCloseShort(collateralAmt);
+        uint256 tokenBalance = swapTokentoEth(collateralAmt);
             if (positionSize == amtClosed) {
                 require(tokenBalance >= borrowBalance);
                 repayBorrowToken(int256(calcBorrowBal()));
                 redeemCollateral(calcSupplyBalance());
-                TransferCollateralOut();
+                transferOutTokens(token.balanceOf(address(this)));
                 transferRemaining ();
                 positionSize -= amtClosed;
             } else {
@@ -380,30 +376,7 @@ contract PositionETHContract {
                 require(tokenBalance >= repayAmt);
                 repayBorrowToken(int256(repayAmt));
                 redeemCollateral(withdrawAmt/cToken.exchangeRateStored());
-                TransferCollateralOut();
-                transferRemaining ();
-                require(amtClosed <= positionSize);
-                positionSize -= amtClosed;
-            }
-    }
-    
-    function closeLeverage(uint256 collateralAmt, uint128 repayAmt, uint256 withdrawAmt, uint256 amtClosed) private{
-        require(msg.value == collateralAmt);
-        uint256 tokenBalance = swapEthToTokenCloseLong(collateralAmt);
-            if (positionSize == amtClosed) {
-                require(tokenBalance >= borrowBalance);
-                // TODO: overflow and underflow errors!
-                repayBorrowToken(int256(calcBorrowBal()));
-                redeemCollateral(calcSupplyBalance());
-                ownerAddress.transfer(address(this).balance);
-                transferRemaining ();
-                positionSize -= amtClosed;
-            } else {
-                require(repayAmt > 0);
-                require(tokenBalance >= repayAmt);
-                repayBorrowToken(int256(repayAmt));
-                redeemCollateral(withdrawAmt/cETH.exchangeRateStored());
-                TransferCollateralOut();
+                transferOutTokens(token.balanceOf(address(this)));
                 transferRemaining ();
                 require(amtClosed <= positionSize);
                 positionSize -= amtClosed;
@@ -415,9 +388,7 @@ contract PositionETHContract {
         require(msg.sender == ownerAddress);
         borrowBalance = calcBorrowBal();
         if(borrowBalance > 0) {
-            if(isLeverage) {
-                closeLeverage(collateralAmt, repayAmt, withdrawAmt, amtClosed);
-            } else {
+            if(!isLeverage) {
                 closeShort(collateralAmt, repayAmt, withdrawAmt, amtClosed);
             }
         }
@@ -437,7 +408,7 @@ contract PositionETHContract {
             if(borrowBalance > 0) {
                 
                 uint256 collateralAmt = address(this).balance;
-                uint256 tokenBalance = swapEthToTokenCloseLong(collateralAmt);
+                uint256 tokenBalance = swapEthToToken(collateralAmt);
                 uint i = 0;
                 
                 while (i < 21 && tokenBalance > 0 && collateralAmt > 0) {
@@ -448,13 +419,13 @@ contract PositionETHContract {
                         
                         borrowBalance = calcBorrowBal();
                         collateralAmt = address(this).balance;
-                        tokenBalance = swapEthToTokenCloseLong(collateralAmt);
+                        tokenBalance = swapEthToToken(collateralAmt);
                     } else {
                         repayBorrowToken(int256(calcBorrowBal()));
                         redeemCollateral(calcSupplyBalance());
                         positionSize = 0;
                         tokenBalance = 0;
-                        swapCollateraltoEthCloseShort(token.balanceOf(address(this)));
+                        swapTokentoEth(token.balanceOf(address(this)));
                     }
                     
                     i++; 
@@ -471,7 +442,7 @@ contract PositionETHContract {
             if(borrowAmtToPayBack > 0) {
                 
                 uint256 collateralAmt = address(this).balance;
-                uint256 tokenBalance = swapEthToTokenCloseLong(collateralAmt);
+                uint256 tokenBalance = swapEthToToken(collateralAmt);
                 uint i = 0;
                 
                 while (i < 20 && tokenBalance > 0 && borrowAmtToPayBack > 0) {
@@ -483,13 +454,14 @@ contract PositionETHContract {
                         borrowAmtToPayBack -= tokenBalance;
                         supplyAmtToWithdraw -= amtToRedeem;
                         collateralAmt = address(this).balance;
-                        tokenBalance = swapEthToTokenCloseLong(collateralAmt);
+                        tokenBalance = swapEthToToken(collateralAmt);
                     } else {
                         repayBorrowToken(int256(borrowAmtToPayBack));
                         redeemUnderlyingCollateral(supplyAmtToWithdraw);
                         positionSize -= (positionSize * calcBorrowBal())/ borrowBalance;
                         tokenBalance = 0;
-                        swapCollateraltoEthCloseShort(token.balanceOf(address(this)));
+                        swapTokentoEth(token.balanceOf(address(this)));
+                        
                     }
                     
                     i++; 
@@ -515,3 +487,4 @@ contract PositionETHContract {
     
     
 }
+
