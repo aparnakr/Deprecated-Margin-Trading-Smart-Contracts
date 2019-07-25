@@ -68,6 +68,15 @@ contract PositionEther {
     uint256 private borrowBalance;
     uint256 private supplyBalance;
 
+
+    modifier restricted {
+        require(
+            msg.sender == ownerAddress || msg.sender == factoryLogicAddress,
+            "User not allowed to call this function"
+        );
+        _;
+    }
+
     /**
      * @notice Constructs a new Position Contract
      * @param _ownerAddr is the address of the owner who can call functions on the contract.
@@ -97,132 +106,10 @@ contract PositionEther {
         cToken = CErc20(_cTokenAddr);
     }
 
-    modifier restricted {
-        require(
-            msg.sender == ownerAddress || msg.sender == factoryLogicAddress,
-            "User not allowed to call this function"
-        );
-        _;
-    }
-
     /**
      * @notice Fallback function to make the contract payable.
      */
     function () external payable { // xxx: should remove generic payable fallback unless absolutely necessary
-    }
-
-        /**
-     * @notice Function to transfer in the collateral (in the simple case Dai)
-     * @param collateralAmt is the number of collateral tokens being transferred in.
-     */
-    function transferInCollateral(uint256 collateralAmt) private {
-        require(collateralAmt > 0, "Cannot have zero collateral amount");
-
-        // TODO: ensure that approve happens in javascript before this is even called
-        require(
-            token.transferFrom(msg.sender, address(this), collateralAmt), "Could not transfer token from account"
-        );
-    }
-
-    /**
-     * @notice Function to transfer in ETH.
-     * @param amt is the amount of ETH tokens being transferred in.
-     */
-    function mintETH(uint256 amt) private {
-        require(amt > 0, "Cannot mint zero ETH");
-        cETH.mint.value(amt)();
-    }
-
-    /**
-     * @notice This function mints a new compound cCollateral token.
-     * @param amt is the amount of underlying tokens being used to mint corresponding cTokens.
-     */
-    function mintCollateral(uint256 amt) private {
-        require(amt > 0, "Cannot mint zero tokens");
-        token.approve(address(cToken), amt); // approve the transfer
-        assert(cToken.mint(amt) == 0); // mint the cTokens and assert there is no error
-    }
-
-    // xxx: isLeverage shadows global value
-    function borrow(uint256 amt, bool isLeverage) private {
-        require(amt >= 0); // xxx: tautology - meant just ">"?
-        address[] memory ct = new address[](2);
-        ct[0] = address(cETH);
-        ct[1] = address(cToken);
-        uint256[] memory errors = TROLL.enterMarkets(ct);
-        require(errors[0] == 0, "cETH failed");
-        require(errors[1] == 0, "cToken failed");
-        if (isLeverage) {
-            // borrow the token if long position
-            uint256 error = cToken.borrow(amt);
-            assert(error == 0);
-        } else {
-            // borrow the ETH if short position
-            uint256 error = cETH.borrow(amt);
-            assert(error == 0);
-        }
-    }
-
-    function swapTokentoEth(uint256 amt) private returns (uint256) {
-        require(amt >= 0); // xxx: tautology
-        (uint256 minConversionRate, uint256 slippageRate) = tokenExchange.getExpectedRate(
-            token, ETH, amt
-        );  // xxx: minConversionRate and slippage never used
-        token.approve(address(tokenExchange), 1000000000000000000000000000000000000000); // xxx: make global
-        return tokenExchange.trade(token, amt, ETH, address(this), 2**255, 0, KNC_PAYOUT_ADDR);
-    }
-
-    function swapEthToToken(uint256 amt) private returns (uint) {
-        require(amt >= 0); // xxx: tautology
-        (uint256 minConversionRate, uint256 slippageRate) = tokenExchange.getExpectedRate(
-            ETH, token, amt
-        ); // xxx: minConversionRate and slippage never used
-       return tokenExchange.trade.value(amt)(ETH, amt, token, address(this), 2**255, 0, KNC_PAYOUT_ADDR);
-    }
-
-    function transferOutTokens(uint256 amt) private {
-        token.approve(ownerAddress, amt); // xxx: unneeded and dangerous approve
-        token.transfer(ownerAddress, amt);
-    }
-
-    function short(uint256 colAmt, uint256 amtToShort) private {
-         transferInCollateral(colAmt);
-         mintCollateral(colAmt);
-         borrow(amtToShort, false);
-         uint256 numTokens = swapEthToToken(amtToShort);
-         transferOutTokens(numTokens);
-    }
-
-    function determineTradeType(bool _isLeverage) private {
-        // Ensure this is an 'l' or an 's'
-        if (isLeverage != _isLeverage) {
-            calcBorrowBal();
-            require(borrowBalance == 0, "borrowBalance must be zero");
-            isLeverage = _isLeverage;
-        }
-    }
-
-    function transferFees() private {
-        if(isLeverage) {
-            factoryLogicAddress.transfer(address(this).balance);
-        } else {
-            uint256 tokenBal = token.balanceOf(address(this));
-            token.approve(factoryLogicAddress, tokenBal);
-            token.transfer(factoryLogicAddress, tokenBal);
-        }
-    }
-
-    function determineLeverageAmount(uint256 _leverageIntensity) private {
-        if(isLeverage) {
-            if (leverageIntensity == 0){
-                leverageIntensity = _leverageIntensity;
-            } else {
-                require(
-                    leverageIntensity == _leverageIntensity,
-                    "Leverage intensities not equal"
-                );
-            }
-        }
     }
 
     function openPosition(
@@ -290,162 +177,6 @@ contract PositionEther {
       mintETH(address(this).balance);
     }
 
-    function getPriceToken() public view returns (uint256) {
-        V1PriceOracleInterface priceContract = V1PriceOracleInterface(0x02557a5E05DeFeFFD4cAe6D83eA3d173B272c904); // xxx: make global
-        uint256 priceAmtCollateral = priceContract.assetPrices(address(token));
-        return priceAmtCollateral;
-    }
-
-    // This functiom calculates the borrow balance of the token (including interest) from compound
-    function calcBorrowBal() private returns (uint256) {
-        if (!isLeverage) {
-            borrowBalance = cETH.borrowBalanceCurrent(address(this));
-        } else {
-            borrowBalance = cToken.borrowBalanceCurrent(address(this));
-        }
-        return borrowBalance;
-    }
-
-    function getAccountLiquidity() public view returns (
-        uint256,
-        uint256,
-        uint256
-    ) {
-        return TROLL.getAccountLiquidity(address(this));
-    }
-
-    // This function calculates the supplyBalance balance of the collateral (including interest) from compound
-    function getSupplyBalance() public view returns (uint256) {
-        if (!isLeverage) {
-            return cToken.balanceOf(address(this)) * cToken.exchangeRateStored();
-        } else {
-            return cETH.balanceOf(address(this)) * cETH.exchangeRateStored();
-        }
-    }
-
-    // This function calculates the supplyBalance balance of the collateral (including interest) from compound
-    function calcSupplyBalance() private view returns (uint256) {
-        if(!isLeverage){
-            return cToken.balanceOf(address(this)) ;
-        } else {
-            return cETH.balanceOf(address(this));
-        }
-    }
-
-    function getBorrowBalance() public view returns (uint256) {
-        if (!isLeverage) {
-            return cETH.borrowBalanceStored(address(this));
-        } else {
-            return cToken.borrowBalanceStored(address(this));
-        }
-    }
-
-    function getSupplyBorrowRatio() public view returns (uint256) {
-        return getSupplyBalance() / getBorrowBalance();
-    }
-
-     // This function calculates the amount of collateralToSupply to close the entire position.
-    function getCollateralToSupply(uint256 repayAmt) public view returns (uint256) {
-        uint256 bBal = getBorrowBalance();
-        uint256 colToSupply = 0;
-        if (bBal > 0 && repayAmt <= bBal) {
-            if (!isLeverage) {
-                (uint256 amtETH, uint256 slippageRate) = tokenExchange.getExpectedRate(token, ETH, 1000000000000000000); // xxx: make this huge number and the rest global constant
-                // How much colToSupply to get repayAmt of ETH?
-                // 1000: amtETH :: ? : repayAmt
-                colToSupply = 1000000000000000000 * repayAmt / amtETH; // xxx: huge number
-            } else {
-                // xxx: slippageRate unused
-                (uint256 amtToken, uint256 slippageRate) = tokenExchange.getExpectedRate(
-                    ETH,
-                    token,
-                    1000000000000000000  // xxx: huge number
-                );
-                // How much colToSupply to get repayAmt of token?
-                // 1: amtToken :: ? : repayAmt
-                colToSupply = 1000000000000000000 * repayAmt / amtToken;
-            }
-        }
-
-        return colToSupply;
-    }
-
-    function repayBorrowToken(int256 borrowAmt) private {
-        // TODO: ensure no issues with casting
-        if (!isLeverage) {
-            cETH.repayBorrow.value(uint256(borrowAmt))();
-        } else {
-            token.approve(address(cToken), 1000000000000000000000000000000000000000); // xxx: make constant
-            require(
-                cToken.repayBorrow(uint256(borrowAmt)) == 0,
-                "cToken borrow failed"
-            );
-        }
-    }
-
-    // This function gets back the supplied collateral from compound
-    function redeemCollateral(uint256 collateralAmt) private {
-         if (!isLeverage) {
-            require(cToken.redeem(collateralAmt) == 0, "cToken redeem failed");
-         } else {
-            require(cETH.redeem(collateralAmt) == 0, "cETH redeem failed");
-         }
-    }
-
-    function redeemUnderlyingCollateral(uint256 collateralAmt) private {
-        require(isLeverage, "Contract not in leverage state");
-        require(
-            cETH.redeemUnderlying(collateralAmt) == 0,
-            "Could not redeem collateral"
-        );
-    }
-
-     // This function sends the remaining intermediate tokens as fees to the factory contract
-    function transferRemaining() private {
-        uint256 tokenBal = token.balanceOf(address(this));
-        token.approve(factoryLogicAddress, tokenBal); // xxx: dangerous approve
-        token.transfer(factoryLogicAddress, tokenBal);
-        ownerAddress.transfer(address(this).balance);
-    }
-
-    function closeShort(
-        uint256 collateralAmt,
-        uint128 repayAmt,
-        uint256 withdrawAmt,
-        uint256 amtClosed
-    ) private {
-        transferInCollateral(collateralAmt);
-        uint256 tokenBalance = swapTokentoEth(collateralAmt);
-            if (positionSize == amtClosed) {
-                require(
-                    tokenBalance >= borrowBalance,
-                    "tokenBalance less than borrowBalance"
-                );
-                repayBorrowToken(int256(calcBorrowBal()));
-                redeemCollateral(calcSupplyBalance());
-                transferOutTokens(token.balanceOf(address(this)));
-                transferRemaining ();
-                positionSize -= amtClosed;
-            } else {
-                require(repayAmt > 0, "Need nonzero repayAmt");
-                require(
-                    tokenBalance >= repayAmt,
-                    "tokenBalance less than repayAmt"
-                );
-
-                // xxx: ensure no issue with casting
-                repayBorrowToken(int256(repayAmt));
-                redeemCollateral(withdrawAmt/cToken.exchangeRateStored());
-                transferOutTokens(token.balanceOf(address(this)));
-                transferRemaining();
-                require(
-                    amtClosed <= positionSize,
-                    "amtClosed greater than positionSize"
-                );
-                positionSize -= amtClosed;
-            }
-    }
-
     // This function closes some part of the position.
     function closePosition(
         uint256 collateralAmt,
@@ -508,9 +239,7 @@ contract PositionEther {
                 }
 
                 ownerAddress.transfer(address(this).balance);
-
             }
-
         } else {
             // xxx: shadows global variable
             uint256 borrowBalance = calcBorrowBal();
@@ -546,7 +275,6 @@ contract PositionEther {
                 }
 
                 ownerAddress.transfer(address(this).balance);
-
             }
         }
     }
@@ -567,6 +295,274 @@ contract PositionEther {
             // xxx: big worry: why is there no require statement here, like the one above?
             transferInCollateral(collateralAmt);
             mintCollateral(collateralAmt);
+        }
+    }
+
+    function getPriceToken() public view returns (uint256) {
+        V1PriceOracleInterface priceContract = V1PriceOracleInterface(0x02557a5E05DeFeFFD4cAe6D83eA3d173B272c904); // xxx: make global
+        uint256 priceAmtCollateral = priceContract.assetPrices(address(token));
+        return priceAmtCollateral;
+    }
+
+    function getAccountLiquidity() public view returns (
+        uint256,
+        uint256,
+        uint256
+    ) {
+        return TROLL.getAccountLiquidity(address(this));
+    }
+
+    // This function calculates the supplyBalance balance of the collateral (including interest) from compound
+    function getSupplyBalance() public view returns (uint256) {
+        if (!isLeverage) {
+            return cToken.balanceOf(address(this)) * cToken.exchangeRateStored();
+        } else {
+            return cETH.balanceOf(address(this)) * cETH.exchangeRateStored();
+        }
+    }
+
+    function getBorrowBalance() public view returns (uint256) {
+        if (!isLeverage) {
+            return cETH.borrowBalanceStored(address(this));
+        } else {
+            return cToken.borrowBalanceStored(address(this));
+        }
+    }
+
+    function getSupplyBorrowRatio() public view returns (uint256) {
+        return getSupplyBalance() / getBorrowBalance();
+    }
+
+     // This function calculates the amount of collateralToSupply to close the entire position.
+    function getCollateralToSupply(uint256 repayAmt) public view returns (uint256) {
+        uint256 bBal = getBorrowBalance();
+        uint256 colToSupply = 0;
+        if (bBal > 0 && repayAmt <= bBal) {
+            if (!isLeverage) {
+                (uint256 amtETH, uint256 slippageRate) = tokenExchange.getExpectedRate(token, ETH, 1000000000000000000); // xxx: make this huge number and the rest global constant
+                // How much colToSupply to get repayAmt of ETH?
+                // 1000: amtETH :: ? : repayAmt
+                colToSupply = 1000000000000000000 * repayAmt / amtETH; // xxx: huge number
+            } else {
+                // xxx: slippageRate unused
+                (uint256 amtToken, uint256 slippageRate) = tokenExchange.getExpectedRate(
+                    ETH,
+                    token,
+                    1000000000000000000  // xxx: huge number
+                );
+                // How much colToSupply to get repayAmt of token?
+                // 1: amtToken :: ? : repayAmt
+                colToSupply = 1000000000000000000 * repayAmt / amtToken;
+            }
+        }
+
+        return colToSupply;
+    }
+
+    /**
+     * @notice Function to transfer in the collateral (in the simple case Dai)
+     * @param collateralAmt is the number of collateral tokens being transferred in.
+     */
+    function transferInCollateral(uint256 collateralAmt) private {
+        require(collateralAmt > 0, "Cannot have zero collateral amount");
+        require(
+            token.transferFrom(msg.sender, address(this), collateralAmt), "Could not transfer token from account"
+        );
+    }
+
+    /**
+     * @notice Function to transfer in ETH.
+     * @param amt is the amount of ETH tokens being transferred in.
+     */
+    function mintETH(uint256 amt) private {
+        require(amt > 0, "Cannot mint zero ETH");
+        cETH.mint.value(amt)();
+    }
+
+    /**
+     * @notice This function mints a new compound cCollateral token.
+     * @param amt is the amount of underlying tokens being used to mint corresponding cTokens.
+     */
+    function mintCollateral(uint256 amt) private {
+        require(amt > 0, "Cannot mint zero tokens");
+        token.approve(address(cToken), amt); // approve the transfer
+        assert(cToken.mint(amt) == 0); // mint the cTokens and assert there is no error
+    }
+
+    // xxx: isLeverage shadows global value
+    function borrow(uint256 amt, bool isLeverage) private {
+        require(amt >= 0); // xxx: tautology - meant just ">"?
+        address[] memory ct = new address[](2);
+        ct[0] = address(cETH);
+        ct[1] = address(cToken);
+        uint256[] memory errors = TROLL.enterMarkets(ct);
+        require(errors[0] == 0, "cETH failed");
+        require(errors[1] == 0, "cToken failed");
+        if (isLeverage) {
+            // borrow the token if long position
+            uint256 error = cToken.borrow(amt);
+            assert(error == 0);
+        } else {
+            // borrow the ETH if short position
+            uint256 error = cETH.borrow(amt);
+            assert(error == 0);
+        }
+    }
+
+    function swapTokentoEth(uint256 amt) private returns (uint256) {
+        require(amt >= 0); // xxx: tautology
+        (uint256 minConversionRate, uint256 slippageRate) = tokenExchange.getExpectedRate(
+            token, ETH, amt
+        );  // xxx: minConversionRate and slippage never used
+        token.approve(address(tokenExchange), 1000000000000000000000000000000000000000); // xxx: make global
+        return tokenExchange.trade(token, amt, ETH, address(this), 2**255, 0, KNC_PAYOUT_ADDR);
+    }
+
+    function swapEthToToken(uint256 amt) private returns (uint256) {
+        require(amt >= 0); // xxx: tautology
+        (uint256 minConversionRate, uint256 slippageRate) = tokenExchange.getExpectedRate(
+            ETH, token, amt
+        ); // xxx: minConversionRate and slippage never used
+       return tokenExchange.trade.value(amt)(ETH, amt, token, address(this), 2**255, 0, KNC_PAYOUT_ADDR);
+    }
+
+    function transferOutTokens(uint256 amt) private {
+        token.approve(ownerAddress, amt); // xxx: unneeded and dangerous approve
+        token.transfer(ownerAddress, amt);
+    }
+
+    function short(uint256 colAmt, uint256 amtToShort) private {
+         transferInCollateral(colAmt);
+         mintCollateral(colAmt);
+         borrow(amtToShort, false);
+         uint256 numTokens = swapEthToToken(amtToShort);
+         transferOutTokens(numTokens);
+    }
+
+    function determineTradeType(bool _isLeverage) private {
+        // Ensure this is an 'l' or an 's'
+        if (isLeverage != _isLeverage) {
+            calcBorrowBal();
+            require(borrowBalance == 0, "borrowBalance must be zero");
+            isLeverage = _isLeverage;
+        }
+    }
+
+    function transferFees() private {
+        if(isLeverage) {
+            factoryLogicAddress.transfer(address(this).balance);
+        } else {
+            uint256 tokenBal = token.balanceOf(address(this));
+            token.approve(factoryLogicAddress, tokenBal);
+            token.transfer(factoryLogicAddress, tokenBal);
+        }
+    }
+
+    function determineLeverageAmount(uint256 _leverageIntensity) private {
+        if(isLeverage) {
+            if (leverageIntensity == 0){
+                leverageIntensity = _leverageIntensity;
+            } else {
+                require(
+                    leverageIntensity == _leverageIntensity,
+                    "Leverage intensities not equal"
+                );
+            }
+        }
+    }
+
+    // This function calculates the borrow balance of the token (including interest) from compound
+    function calcBorrowBal() private returns (uint256) {
+        if (!isLeverage) {
+            borrowBalance = cETH.borrowBalanceCurrent(address(this));
+        } else {
+            borrowBalance = cToken.borrowBalanceCurrent(address(this));
+        }
+        return borrowBalance;
+    }
+
+        function repayBorrowToken(int256 borrowAmt) private {
+        // TODO: ensure no issues with casting
+        if (!isLeverage) {
+            cETH.repayBorrow.value(uint256(borrowAmt))();
+        } else {
+            token.approve(address(cToken), 1000000000000000000000000000000000000000); // xxx: make constant
+            require(
+                cToken.repayBorrow(uint256(borrowAmt)) == 0,
+                "cToken borrow failed"
+            );
+        }
+    }
+
+    // This function gets back the supplied collateral from compound
+    function redeemCollateral(uint256 collateralAmt) private {
+         if (!isLeverage) {
+            require(cToken.redeem(collateralAmt) == 0, "cToken redeem failed");
+         } else {
+            require(cETH.redeem(collateralAmt) == 0, "cETH redeem failed");
+         }
+    }
+
+    function redeemUnderlyingCollateral(uint256 collateralAmt) private {
+        require(isLeverage, "Contract not in leverage state");
+        require(
+            cETH.redeemUnderlying(collateralAmt) == 0,
+            "Could not redeem collateral"
+        );
+    }
+
+    // This function sends the remaining intermediate tokens as fees to the factory contract
+    function transferRemaining() private {
+        uint256 tokenBal = token.balanceOf(address(this));
+        token.approve(factoryLogicAddress, tokenBal); // xxx: dangerous approve
+        token.transfer(factoryLogicAddress, tokenBal);
+        ownerAddress.transfer(address(this).balance);
+    }
+
+    function closeShort(
+        uint256 collateralAmt,
+        uint128 repayAmt,
+        uint256 withdrawAmt,
+        uint256 amtClosed
+    ) private {
+        transferInCollateral(collateralAmt);
+        uint256 tokenBalance = swapTokentoEth(collateralAmt);
+        if (positionSize == amtClosed) {
+            require(
+                tokenBalance >= borrowBalance,
+                "tokenBalance less than borrowBalance"
+            );
+            repayBorrowToken(int256(calcBorrowBal()));
+            redeemCollateral(calcSupplyBalance());
+            transferOutTokens(token.balanceOf(address(this)));
+            transferRemaining ();
+            positionSize -= amtClosed;
+        } else {
+            require(repayAmt > 0, "Need nonzero repayAmt");
+            require(
+                tokenBalance >= repayAmt,
+                "tokenBalance less than repayAmt"
+            );
+
+            // xxx: ensure no issue with casting
+            repayBorrowToken(int256(repayAmt));
+            redeemCollateral(withdrawAmt/cToken.exchangeRateStored());
+            transferOutTokens(token.balanceOf(address(this)));
+            transferRemaining();
+            require(
+                amtClosed <= positionSize,
+                "amtClosed greater than positionSize"
+            );
+            positionSize -= amtClosed;
+        }
+    }
+
+    // This function calculates the supplyBalance balance of the collateral (including interest) from compound
+    function calcSupplyBalance() private view returns (uint256) {
+        if(!isLeverage){
+            return cToken.balanceOf(address(this)) ;
+        } else {
+            return cETH.balanceOf(address(this));
         }
     }
 }
