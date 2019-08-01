@@ -38,7 +38,6 @@ contract PositionEther {
     // seems inconsistent
 
     /// CONSTANTS
-    string public constant ASSET = "ETH"; // xxx: unused
     // Kyber payout address
     address private constant KNC_PAYOUT_ADDR = 0x087aC7736469716D73498e479E09119A02D7A59D;
     ERC20Interface private constant ETH = ERC20Interface(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE);
@@ -48,7 +47,7 @@ contract PositionEther {
 
 
     // User's address
-    address payable public ownerAddress; // xxx: any reason why this is public but factoryLogicAddress is private?
+    address payable public ownerAddress;
     // Size of position opened
     uint256 public positionSize = 0;
     // Amount of collateral that can be borrowed for each dollar of position supplied
@@ -57,6 +56,7 @@ contract PositionEther {
     // Can only be changed when no positions are open
     bool public isLeverage;
 
+    // xxx: consider setting below to constant since not changing
     // Address of the Contract which deployed this
     address payable private factoryLogicAddress;
     CEther private cETH;
@@ -74,6 +74,11 @@ contract PositionEther {
             msg.sender == ownerAddress || msg.sender == factoryLogicAddress,
             "User not allowed to call this function"
         );
+        _;
+    }
+
+    modifier onlyOwner {
+        require(msg.sender == ownerAddress, "Only owner allowed");
         _;
     }
 
@@ -107,23 +112,24 @@ contract PositionEther {
     }
 
     /**
-     * @notice Fallback function to make the contract payable.
+     * @notice Fallback function to make the contract payable to receive ETH
+     * from Kyber or Uniswap.
      */
-    function () external payable { // xxx: should remove generic payable fallback unless absolutely necessary
-    }
+    function () external payable {}
 
     function openPosition(
         uint256 collateralAmt,
         uint256 borrowAmt,
         bool _isLeverage
-    ) public payable restricted {
+    ) external payable restricted {
         determineTradeType(_isLeverage);
-        determineLeverageAmount(130); // xxx: make num constant
+        determineLeverageAmount(130); // xxx: make num constant - short position 1.3x leverage
 
         if (!_isLeverage) {
-            short((1000 * collateralAmt)/1006, borrowAmt);
+            short((1000 * collateralAmt)/1006, borrowAmt); // xxx: move into helper function
             positionSize += borrowAmt;
         }
+
         transferFees();
     }
 
@@ -134,43 +140,43 @@ contract PositionEther {
      * @param leverageIntensity is the leverageIntensity scaled by 100. 2x leverage = 200 leverageIntensity.
      */
     function looping(
-        uint256 collateralAmt,
-        uint256 ratio,
-        uint256 leverageIntensity // xxx: shadows global variable
-    ) public payable restricted {
+        uint256 _collateralAmt,
+        uint256 _ratio,
+        uint256 _leverageIntensity
+    ) external payable restricted {
         determineTradeType(true);
         uint256 loopLimit = 20; // xxx: make global
-        require(collateralAmt <= msg.value, "Insufficient funds");
+        require(_collateralAmt <= msg.value, "Insufficient funds");
 
-        determineLeverageAmount(leverageIntensity);
+        determineLeverageAmount(_leverageIntensity);
         uint256 borrowAmt = 100001; // xxx: make global
         uint256 i = 0; // xxx: can be uint8
         uint256 priceAmtCollateral;
-        uint256 amtToBeSupplied = (leverageIntensity * collateralAmt)/100;
-        positionSize += collateralAmt;
-        collateralAmt = (1000 * collateralAmt) / 1006; // xxx: put fee calculation in helper function -- also avoid assigning to func args
-        uint256 amtSupplied = collateralAmt; // xxx: extraneous variable
+        uint256 amtToBeSupplied = (_leverageIntensity * _collateralAmt)/100;
+        positionSize += _collateralAmt;
+        _collateralAmt = (1000 * _collateralAmt) / 1006; // xxx: put fee calculation in helper function -- also avoid assigning to func args
+        uint256 amtSupplied = _collateralAmt; // xxx: extraneous variable
 
         // xxx: manually calculating and transferring fees, circumventing helper func -- fix the helper to handle all cases
-        factoryLogicAddress.transfer(address(this).balance - collateralAmt);
+        factoryLogicAddress.transfer(address(this).balance - _collateralAmt);
 
         // xxx: figure out max loop amount
-        while (i < loopLimit && collateralAmt > 10000 && borrowAmt > 10000 && amtSupplied < amtToBeSupplied) {
-            mintETH(collateralAmt);
+        while (i < loopLimit && _collateralAmt > 10000 && borrowAmt > 10000 && amtSupplied < amtToBeSupplied) {
+            mintETH(_collateralAmt);
             // Calculate the amount to be borrowed
 
             // xxx: should be made global constant
             V1PriceOracleInterface priceContract = V1PriceOracleInterface(0x02557a5E05DeFeFFD4cAe6D83eA3d173B272c904);
             priceAmtCollateral = priceContract.assetPrices(address(token));
-            borrowAmt = (ratio * collateralAmt * (10 ** 18)) / (100 * priceAmtCollateral); // xxx: move calculations into helper func
+            borrowAmt = (_ratio * _collateralAmt * (10 ** 18)) / (100 * priceAmtCollateral); // xxx: move calculations into helper func
             if (borrowAmt > 10000) {
                 // Borrow, Swap and add to the position size
                 borrow(borrowAmt, true);
                 swapTokentoEth(borrowAmt);
             }
             // xxx: move all below into above suite
-            collateralAmt = address(this).balance;
-            amtSupplied += collateralAmt;
+            _collateralAmt = address(this).balance;
+            amtSupplied += _collateralAmt;
             i++;
       }
 
@@ -183,7 +189,7 @@ contract PositionEther {
         uint128 repayAmt, // xxx: why 128 specifically here?
         uint256 withdrawAmt,
         uint256 amtClosed
-    ) public payable {
+    ) external payable {
         require(msg.sender == ownerAddress, "Not owner address"); // xxx: why only ownerAddress?
         borrowBalance = calcBorrowBal();
         if(borrowBalance > 0 && !isLeverage) {
@@ -195,7 +201,7 @@ contract PositionEther {
         uint256 positionSizeToClose,
         uint256 ratio,
         uint256 amtTransferredIn
-    ) public payable {
+    ) external payable {
         require(msg.sender == ownerAddress, "Not owner address"); // xxx: why only ownerAddress?
         require(
             amtTransferredIn == msg.value,
@@ -279,10 +285,8 @@ contract PositionEther {
         }
     }
 
-     // This function lets the user top up collateral.
-    function addCollateral(uint256 collateralAmt) public payable {
-        require(msg.sender == ownerAddress, "Only owner allowed");
-
+    // This function lets the user top up collateral.
+    function addCollateral(uint256 collateralAmt) external payable onlyOwner {
         if(isLeverage) {
             // xxx: why do you need an input value of collateralAmt? Why not use msg.value directly?
             require(
@@ -298,43 +302,8 @@ contract PositionEther {
         }
     }
 
-    function getPriceToken() public view returns (uint256) {
-        V1PriceOracleInterface priceContract = V1PriceOracleInterface(0x02557a5E05DeFeFFD4cAe6D83eA3d173B272c904); // xxx: make global
-        uint256 priceAmtCollateral = priceContract.assetPrices(address(token));
-        return priceAmtCollateral;
-    }
-
-    function getAccountLiquidity() public view returns (
-        uint256,
-        uint256,
-        uint256
-    ) {
-        return TROLL.getAccountLiquidity(address(this));
-    }
-
-    // This function calculates the supplyBalance balance of the collateral (including interest) from compound
-    function getSupplyBalance() public view returns (uint256) {
-        if (!isLeverage) {
-            return cToken.balanceOf(address(this)) * cToken.exchangeRateStored();
-        } else {
-            return cETH.balanceOf(address(this)) * cETH.exchangeRateStored();
-        }
-    }
-
-    function getBorrowBalance() public view returns (uint256) {
-        if (!isLeverage) {
-            return cETH.borrowBalanceStored(address(this));
-        } else {
-            return cToken.borrowBalanceStored(address(this));
-        }
-    }
-
-    function getSupplyBorrowRatio() public view returns (uint256) {
-        return getSupplyBalance() / getBorrowBalance();
-    }
-
-     // This function calculates the amount of collateralToSupply to close the entire position.
-    function getCollateralToSupply(uint256 repayAmt) public view returns (uint256) {
+    // This function calculates the amount of collateralToSupply to close the entire position.
+    function getCollateralToSupply(uint256 repayAmt) external view returns (uint256) {
         uint256 bBal = getBorrowBalance();
         uint256 colToSupply = 0;
         if (bBal > 0 && repayAmt <= bBal) {
@@ -357,6 +326,23 @@ contract PositionEther {
         }
 
         return colToSupply;
+    }
+
+    // This function calculates the supplyBalance balance of the collateral (including interest) from compound
+    function getSupplyBalance() public view returns (uint256) {
+        if (!isLeverage) {
+            return cToken.balanceOf(address(this)) * cToken.exchangeRateStored();
+        } else {
+            return cETH.balanceOf(address(this)) * cETH.exchangeRateStored();
+        }
+    }
+
+    function getBorrowBalance() public view returns (uint256) {
+        if (!isLeverage) {
+            return cETH.borrowBalanceStored(address(this));
+        } else {
+            return cToken.borrowBalanceStored(address(this));
+        }
     }
 
     /**
@@ -557,12 +543,20 @@ contract PositionEther {
         }
     }
 
-    // This function calculates the supplyBalance balance of the collateral (including interest) from compound
+    // This function calculates the supplyBalance balance of the collateral (including interest) from Compound
     function calcSupplyBalance() private view returns (uint256) {
         if(!isLeverage){
             return cToken.balanceOf(address(this)) ;
         } else {
             return cETH.balanceOf(address(this));
         }
+    }
+
+    function getAccountLiquidity() private view returns (
+        uint256,
+        uint256,
+        uint256
+    ) {
+        return TROLL.getAccountLiquidity(address(this));
     }
 }
